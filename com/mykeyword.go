@@ -243,29 +243,7 @@ func GetPrimaryKeywordsByKeyword(keyword string) []string {
 	return []string{keyword}
 }
 
-// GetPrimaryKeywordsByPrimaryKeyword is getting primary keywords via one primary keyword.
-// Like 捉妖记2, we think primary keywords are 捉妖记 and 捉妖记2.
-// Primary keyword is keyword in syntax.
-func GetPrimaryKeywordsByPrimaryKeyword(keyword string) []string {
-	keywords := []string{keyword}
-	text := []rune(keyword)
-	if IsChinese(text[0]) {
-		i := len(text) - 1
-		for ; i > 0; i-- {
-			if text[i] >= '0' && text[i] <= '9' {
-				continue
-			}
-			break
-		}
 
-		newKeyword := string(text[:i+1])
-		if len(newKeyword) != len(keyword) {
-			keywords = append(keywords, newKeyword)
-		}
-	}
-
-	return keywords
-}
 
 // NewMyKeywordStruct is created for KAD search.
 func NewMyKeywordStruct(myKeyword *MyKeyword, items []*Item) *MyKeywordStruct {

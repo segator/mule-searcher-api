@@ -4,6 +4,7 @@ go 1.13
 
 require (
 	github.com/PuerkitoBio/goquery v1.5.0
+	github.com/Songmu/goxz v0.6.0 // indirect
 	github.com/anacrolix/torrent v1.13.0
 	github.com/ericchiang/css v0.0.0-20171210184639-f08e94f04ef6
 	github.com/gorilla/mux v1.6.2

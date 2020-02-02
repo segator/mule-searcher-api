@@ -12,17 +12,14 @@ import (
 	"github.com/anacrolix/torrent/metainfo"
 	"github.com/gorilla/mux"
 	"hahajing/com"
-	"hahajing/door"
 	"hahajing/kad"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"regexp"
 	"strconv"
 	"strings"
-	"text/template"
 	"time"
 
 	"golang.org/x/net/websocket"
@@ -41,47 +38,20 @@ type webError struct {
 // Web x
 type Web struct {
 	searchReqCh       chan *kad.SearchReq
-	keywordCheckReqCh chan *door.KeywordCheckReq
 
-	homeTemplate    *template.Template
-	keywordManager  *com.KeywordManager
+
+
+
 
 }
 
 // Start x
-func (we *Web) Start(searchReqCh chan *kad.SearchReq, keywordCheckReqCh chan *door.KeywordCheckReq, keywordManager *com.KeywordManager) {
+func (we *Web) Start(searchReqCh chan *kad.SearchReq, ) {
 	we.searchReqCh = searchReqCh
-	we.keywordCheckReqCh = keywordCheckReqCh
-	we.keywordManager = keywordManager
-
-
-
-	// HTML page
-	path := com.GetConfigPath()
-	tmpl, err := template.ParseFiles(path + "/config/web/home.html")
-	if err != nil {
-		log.Panic("Home page failed!")
-	}
-	we.homeTemplate = tmpl
-
-	// at last start sever
 	we.startServer()
 }
 
-func (we *Web) checkKeywordsFromDoor(myKeyword *com.MyKeyword) ([]*com.Item, string) {
-	// send Door to check if this keyword is legal
-	resCh := make(chan *door.KeywordCheckRes, 1)
-	req := door.KeywordCheckReq{ResCh: resCh, MyKeyword: myKeyword}
-	we.keywordCheckReqCh <- &req
 
-	// waiting result from Door
-	select {
-	case res := <-resCh:
-		return res.Items, res.ErrorStr
-	case <-time.After(keywordCheckWaitingTime * time.Second):
-		return nil, "检查超时，请重试！"
-	}
-}
 
 func (we *Web) readSearchInput(query string) (*com.MyKeyword) {
 	keywords := com.Split2Keywords(query)
@@ -89,16 +59,6 @@ func (we *Web) readSearchInput(query string) (*com.MyKeyword) {
 	return myKeyword
 }
 
-func (we *Web) checkKeywordsFromKeywordManager(myKeyword *com.MyKeyword) ([]*com.Item, bool) {
-	// get from keyword manager
-	items := we.keywordManager.Get(myKeyword.SearchKeywords)
-	if items == nil { // not existing in keyword manager
-		return nil, false
-	}
-
-	// filter
-	return com.FilterItems(items, myKeyword), true
-}
 
 func (we *Web) writeError(ws *websocket.Conn, errStr string) {
 	data, _ := json.Marshal(&webError{Error: errStr})
