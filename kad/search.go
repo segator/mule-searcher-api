@@ -5,8 +5,8 @@ import (
 	"time"
 )
 
-const searchExpires = 60 // 5 seconds for each search living
-const SearchTimeWithoutResults = 8
+
+
 const ed2kFileReturnNbr = 100
 const searchTolerance uint32 = 16777216
 

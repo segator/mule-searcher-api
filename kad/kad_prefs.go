@@ -9,9 +9,6 @@ import (
 	"time"
 )
 
-const localUDPPort = 2500 //19810
-const localTCPPort = 2501
-
 // Prefs is my preferences.
 type Prefs struct {
 	kadID ID
@@ -23,19 +20,20 @@ type Prefs struct {
 	bFirewalled   bool
 	externIP      uint32
 	externUDPPort uint16
-
+	config *com.Config
 	localIP      uint32
 	localUDPPort uint16 // used to UDP connection listen, if not firewalled, it's same as @externUDPPort
 
 	tLastContact int64 // time of last packet I received from other client, I use it to track if I'm still online
 }
 
-func (p *Prefs) start() {
+func (p *Prefs) start(config *com.Config) {
+	p.config=config
 	p.kadID.generate()
 	p.udpKey = random32()
-	p.tcpPort = localTCPPort
-	p.externUDPPort = localUDPPort
-	p.localUDPPort = localUDPPort
+	p.tcpPort = uint16(config.TCPPort)
+	p.externUDPPort = uint16(config.ExternalUDPPort)
+	p.localUDPPort = uint16(config.UDPPort)
 	p.initLocalIP()
 }
 

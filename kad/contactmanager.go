@@ -7,14 +7,13 @@ import (
 	"time"
 )
 
-const contactTotalNbr = 5000
-//Isaac
+
 
 // ContactManager x, controlling the time entry
 type ContactManager struct {
 	pPerfs           *Prefs
 	pPacketProcessor *PacketProcessor
-
+	config *com.Config
 	liver   ContactLiver
 	onliner ContactOnliner
 	finder  ContactFinder
@@ -22,7 +21,8 @@ type ContactManager struct {
 	contactMap map[uint32]*Contact // key is IP
 }
 
-func (cm *ContactManager) start(pPerfs *Prefs, pPacketProcessor *PacketProcessor, pPacketReqGuard *PacketReqGuard) bool {
+func (cm *ContactManager) start(pPerfs *Prefs, pPacketProcessor *PacketProcessor, pPacketReqGuard *PacketReqGuard,config *com.Config) bool {
+	cm.config=config
 	cm.pPerfs = pPerfs
 	cm.pPacketProcessor = pPacketProcessor
 
@@ -36,8 +36,7 @@ func (cm *ContactManager) start(pPerfs *Prefs, pPacketProcessor *PacketProcessor
 }
 
 func (cm *ContactManager) readFile() bool {
-	path := com.GetConfigPath()
-	nodeFileName := path + "/config/kad/nodes.dat"
+	nodeFileName := cm.config.NodeDatPath
 
 	f, err := os.Open(nodeFileName)
 	if err != nil {
@@ -109,7 +108,7 @@ func (cm *ContactManager) addContact(
 	pKadUDPKey *UDPKey,
 	bVerified bool) (bool, *Contact) {
 
-	if len(cm.contactMap) >= contactTotalNbr {
+	if len(cm.contactMap) >= cm.config.MaxContacts {
 		return false, nil
 	}
 
@@ -232,7 +231,7 @@ func (cm *ContactManager) tickProcess() {
 	}
 
 	// we still need find more nodes
-	if len(cm.contactMap) < contactTotalNbr {
+	if len(cm.contactMap) < cm.config.MaxContacts {
 		cm.finder.tickProcess()
 	} else {
 		//com.HhjLog.Infof("Reach limit of contacts!")

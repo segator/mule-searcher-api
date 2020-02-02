@@ -25,10 +25,6 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-const (
-	keywordCheckWaitingTime = 5
-	kadSearchWaitingTime    = 15
-)
 
 // webError is for user browser.
 type webError struct {
@@ -38,16 +34,13 @@ type webError struct {
 // Web x
 type Web struct {
 	searchReqCh       chan *kad.SearchReq
-
-
-
-
-
+	config *com.Config
 }
 
 // Start x
-func (we *Web) Start(searchReqCh chan *kad.SearchReq, ) {
+func (we *Web) Start(searchReqCh chan *kad.SearchReq,config *com.Config ) {
 	we.searchReqCh = searchReqCh
+	we.config = config
 	we.startServer()
 }
 
@@ -68,7 +61,7 @@ func (we *Web) writeError(ws *websocket.Conn, errStr string) {
 func (we *Web) send2Kad(myKeywordStruct *com.MyKeywordStruct) []*com.Ed2kFileLinkJSON  {
 	resCh := make(chan *kad.SearchRes, kad.SearchResChSize)
 	timeoutChannel := make(chan bool, 1)
-	lastDateFound :=  time.Now().Unix()+ kad.SearchTimeWithoutResults
+	lastDateFound :=  time.Now().Unix()+ int64(we.config.SearchTimeWithoutResults)
 
 	var results []*com.Ed2kFileLinkJSON
 	searchReq := kad.SearchReq{ResCh: resCh, MyKeywordStruct: myKeywordStruct}
@@ -96,7 +89,7 @@ func (we *Web) send2Kad(myKeywordStruct *com.MyKeywordStruct) []*com.Ed2kFileLin
 					com.HhjLog.Infof("Not filtered %s",fileLink.Name)
 				}
 			}
-			lastDateFound = time.Now().Unix()+ kad.SearchTimeWithoutResults
+			lastDateFound = time.Now().Unix()+ int64(we.config.SearchTimeWithoutResults)
 			if pSearchRes.Cached {
 				timeoutChannel <- true
 			}

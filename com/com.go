@@ -5,6 +5,16 @@ import (
 	"os"
 	"strings"
 )
+type Config struct {
+	UDPPort  int
+	ExternalUDPPort int
+	TCPPort int
+	MaxContacts int
+	SearchTimeWithoutResults int
+	SearchExpires int
+	NodeDatPath string
+}
+
 
 // HhjLog is HHJ system log
 var HhjLog = logging.MustGetLogger("hhj")

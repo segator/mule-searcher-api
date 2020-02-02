@@ -4,7 +4,7 @@ import (
 	"container/list"
 )
 
-const contactFindNbr = 5 // how many contacts used to find more nodes
+const contactFindNbr = 10 // how many contacts used to find more nodes
 
 // ContactFinder x
 type ContactFinder struct {

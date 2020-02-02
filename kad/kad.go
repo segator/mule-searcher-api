@@ -1,6 +1,7 @@
 package kad
 
 import (
+	"hahajing/com"
 	"time"
 )
 
@@ -18,7 +19,7 @@ type Kad struct {
 	packetProcesser PacketProcessor
 	packetReqGuard  PacketReqGuard
 	searchManager   SearchManager
-
+	config *com.Config
 	socketManager  SocketManager
 	recvCh, sendCh chan *Packet
 
@@ -27,7 +28,8 @@ type Kad struct {
 }
 
 // Start x
-func (k *Kad) Start() bool {
+func (k *Kad) Start(config *com.Config) bool {
+	k.config=config
 	k.SearchReqCh = make(chan *SearchReq, kadSearchReqChSize)
 
 	socketChSize := bootstrapSearchContactNbr * int(kademliaFindNode) * int(kademliaFindNode)
@@ -35,13 +37,13 @@ func (k *Kad) Start() bool {
 	k.sendCh = make(chan *Packet, socketChSize)
 
 	// start should be from bottom to up layer
-	k.prefs.start()
+	k.prefs.start(config)
 	k.socketManager.start(&k.prefs, k.recvCh, k.sendCh)
 	k.packetReqGuard.start()
 	k.packetProcesser.start(&k.prefs, &k.contactManager, &k.searchManager, &k.packetReqGuard, k.sendCh)
-	k.searchManager.start(&k.packetProcesser, &k.contactManager.onliner)
+	k.searchManager.start(&k.packetProcesser, &k.contactManager.onliner,config)
 
-	k.contactManager.start(&k.prefs, &k.packetProcesser, &k.packetReqGuard)
+	k.contactManager.start(&k.prefs, &k.packetProcesser, &k.packetReqGuard,config)
 
 	go k.scheduleRoutine()
 

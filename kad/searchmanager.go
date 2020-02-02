@@ -9,14 +9,15 @@ import (
 // SearchManager x
 type SearchManager struct {
 	pPacketProcessor *PacketProcessor
-
+	config *com.Config
 	searchCount uint64
 	searchMap   map[[16]byte][]*Search // key is 128bits KAD hash of keyword
 
 	decision SearchDecision
 }
 
-func (sm *SearchManager) start(pPacketProcessor *PacketProcessor, pOnliner *ContactOnliner) {
+func (sm *SearchManager) start(pPacketProcessor *PacketProcessor, pOnliner *ContactOnliner,config *com.Config) {
+	sm.config = config
 	sm.pPacketProcessor = pPacketProcessor
 
 	sm.searchMap = make(map[[16]byte][]*Search)
@@ -44,7 +45,7 @@ func (sm *SearchManager) newSearch(pSearchReq *SearchReq) {
 			myKeywordStruct: pSearchReq.MyKeywordStruct,
 			targetID:        ID{hash: targetHash},
 			targetKeyword:   targetKeyword,
-			tExpires:        time.Now().Unix() + searchExpires,
+			tExpires:        time.Now().Unix() + int64(sm.config.SearchExpires),
 			fileHashMap:     make(map[[16]byte]bool),
 			contactIPMap:    make(map[uint32]bool)}
 
