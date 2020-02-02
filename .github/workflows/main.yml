@@ -23,18 +23,12 @@ jobs:
             curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
             dep ensure
         fi
-
-    - name: go-crossbuild
-      uses: izumin5210/action-go-crossbuild@v1.0.0
-      with:    
-        name: kad-e2dk-searcher
-        dest: ./dist
+    - name: build
+      run: go build -o dist/kad-e2dk-searcher -ldflags "-w -s" .
     - name: Upload artifact
       uses: actions/upload-artifact@v1.0.0
       with:
-        # Artifact name
         name: binaries
-        # Directory containing files to upload
         path: ./dist
     - name: Publish to Registry
       uses: elgohr/Publish-Docker-Github-Action@2.12
