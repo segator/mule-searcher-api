@@ -11,7 +11,7 @@ var kadInstance kad.Kad
 var webInstance web.Web
 var doorInstance door.Door
 var keywordManager = com.NewKeywordManager()
-var config = 
+
 func main() {
 	kadInstance.Start()
 	doorInstance.Start(keywordManager)
