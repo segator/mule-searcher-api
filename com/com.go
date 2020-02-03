@@ -11,6 +11,7 @@ import (
 )
 type Config struct {
 	UDPPort  int
+	NumberOfSocket int
 	ExternalUDPPort int
 	TCPPort int
 	MaxContacts int

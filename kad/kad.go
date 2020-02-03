@@ -38,7 +38,7 @@ func (k *Kad) Start(config *com.Config) bool {
 
 	// start should be from bottom to up layer
 	k.prefs.start(config)
-	k.socketManager.start(&k.prefs, k.recvCh, k.sendCh)
+	k.socketManager.start(&k.prefs, k.recvCh, k.sendCh,config)
 	k.packetReqGuard.start()
 	k.packetProcesser.start(&k.prefs, &k.contactManager, &k.searchManager, &k.packetReqGuard, k.sendCh)
 	k.searchManager.start(&k.packetProcesser, &k.contactManager.onliner,config)

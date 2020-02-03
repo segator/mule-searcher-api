@@ -16,6 +16,7 @@ func main() {
 	flag.IntVar(&config.WEBListenPort,"web-listen-port",80,"Web Listen Port")
 	flag.IntVar(&config.UDPPort,"udp-listen-port",2500,"UDP Listen Port")
 	flag.IntVar(&config.ExternalUDPPort,"public-udp-listen-port",2500,"Public UDP Listen Port")
+	flag.IntVar(&config.NumberOfSocket,"NumberOfUDPSockets",10,"Number of UDP Sockets")
 	flag.IntVar(&config.TCPPort,"tcp-listen-port",2501,"TCP Listen Port")
 	flag.StringVar(&config.NodeDatPath,"nodesdat-path","http://upd.emule-security.org/nodes.dat","nodes.dat path can be http:// or file://")
 	flag.IntVar(&config.SearchTimeWithoutResults,"timeout-noresults",8,"Time to finish search after no more results")
