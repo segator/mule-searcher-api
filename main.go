@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"hahajing/com"
+	"hahajing/download"
 	"hahajing/kad"
 	"hahajing/web"
 )
@@ -22,12 +23,26 @@ func main() {
 	flag.IntVar(&config.SearchTimeWithoutResults,"timeout-noresults",8,"Time to finish search after no more results")
 	flag.IntVar(&config.SearchExpires,"search-cache-timeout",60,"Time to cache searches")
 	flag.IntVar(&config.MaxContacts,"contacts",5000,"Max number of contacts")
+	flag.StringVar(&config.EmuleDownloader,"emule-type","emule","Type of Emule Downloader service (emule,synology)")
 	flag.StringVar(&config.EMuleURL,"emule-url","http://localhost:4711","Emule URL")
 	flag.StringVar(&config.EMULEWebPassword,"emule-password","admin","admin")
-
-
+	flag.StringVar(&config.SynologyUsername,"synology-username","","Synology username")
+	flag.StringVar(&config.SynologyPassword,"synology-password","","Synology password")
+	flag.StringVar(&config.SynologyURL,"synology-url","http://192.168.1.20:5000","Synology URL")
+	flag.StringVar(&config.SynologyDestionation,"synology-destionation","","Synology destination path")
 	flag.Parse()
+	var downloader download.Downloader
+	switch config.EmuleDownloader{
+	case "emule":
+		downloader = download.EmuleDownloader{Password:config.EMULEWebPassword, EmuleWebURL:config.EMuleURL}
+	case "synology":
+		downloader = download.SynologyMuleDownloader{SynologyPassword:config.SynologyPassword,
+			SynologyUser:config.SynologyUsername,
+			SynologyURL:config.SynologyURL,
+			SynologyDestionation: config.SynologyDestionation,
 
+		}
+	}
 	kadInstance.Start(&config)
-	webInstance.Start(kadInstance.SearchReqCh,&config)
+	webInstance.Start(kadInstance.SearchReqCh,&config,downloader)
 }

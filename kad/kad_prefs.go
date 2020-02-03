@@ -116,8 +116,8 @@ func (p *Prefs) initLocalIP() {
 	defer conn.Close()
 
 	localAddr := conn.LocalAddr().(*net.UDPAddr)
-	com.HhjLog.Infof("Local IP: %s\n", localAddr.IP.String())
-	com.HhjLog.Infof("Public IP: %s\n", ip)//localAddr.IP.String()
+	com.HhjLog.Infof("Listening on IP: %s:%d\n", localAddr.IP.String(),p.config.UDPPort)
+	com.HhjLog.Infof("Listening on IP: %s:%d\n", ip,p.config.ExternalUDPPort)
 
 	p.localIP = ip2I(localAddr.IP)
 	p.bFirewalled = false

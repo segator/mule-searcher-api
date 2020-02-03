@@ -18,8 +18,13 @@ type Config struct {
 	SearchTimeWithoutResults int
 	SearchExpires int
 	NodeDatPath string
+	EmuleDownloader string
 	EMuleURL string
 	EMULEWebPassword string
+	SynologyUsername string
+	SynologyPassword string
+	SynologyURL string
+	SynologyDestionation string
 	WEBListenPort int
 }
 

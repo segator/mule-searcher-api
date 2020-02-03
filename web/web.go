@@ -12,11 +12,10 @@ import (
 	"github.com/anacrolix/torrent/metainfo"
 	"github.com/gorilla/mux"
 	"hahajing/com"
+	"hahajing/download"
 	"hahajing/kad"
 	"io"
 	"net/http"
-	"net/url"
-	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -32,14 +31,17 @@ type webError struct {
 
 // Web x
 type Web struct {
-	searchReqCh       chan *kad.SearchReq
+	searchReqCh chan *kad.SearchReq
 	config *com.Config
+	downloader download.Downloader
 }
 
 // Start x
-func (we *Web) Start(searchReqCh chan *kad.SearchReq,config *com.Config ) {
+func (we *Web) Start(searchReqCh chan *kad.SearchReq,config *com.Config, downloader download.Downloader) {
 	we.searchReqCh = searchReqCh
 	we.config = config
+	we.downloader = downloader
+
 	we.startServer()
 }
 
@@ -174,31 +176,10 @@ func (we *Web) fakeQBittorrent(w http.ResponseWriter, r *http.Request) {
 			//buf := new(bytes.Buffer)
 			//buf.ReadFrom(file)
 
-			metaInfo, err := metainfo.Load(file)
+			metaInfoFile, err := metainfo.Load(file)
 			if err == nil {
-				client := &http.Client{}
-				form := url.Values{}
-				form.Add("p", we.config.EMULEWebPassword)
-				form.Add("w", "password")
-				req, err := http.NewRequest("POST", we.config.EMuleURL, strings.NewReader(form.Encode()))
-				if err == nil {
-					response, err := client.Do(req)
-					if err==nil {
-						if response.StatusCode == 200 {
-							buf := new(bytes.Buffer)
-							buf.ReadFrom(response.Body)
-							content := buf.String()
-							pattern := regexp.MustCompile(`ses=(-?\d*)&`)
-							ses:= pattern.FindStringSubmatch(content)[1]
-							uploadURL := we.config.EMuleURL +"/?ses=" + ses + "&w=transfer&ed2k="+url.QueryEscape(metaInfo.Announce)
-							response,err := http.Get(uploadURL)
-							if err == nil {
-								println(response.Status)
-							}
-						}else{
-							err = errors.New("invalid status:"+ response.Status)
-						}
-					}
+				if !we.downloader.Download(metaInfoFile.Announce) {
+					err = errors.New("Failed to download" + metaInfoFile.Announce)
 				}
 			}
 			if err == nil {
