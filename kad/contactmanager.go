@@ -1,9 +1,11 @@
 package kad
 
 import (
+	"bytes"
 	"encoding/binary"
 	"hahajing/com"
-	"os"
+	"io/ioutil"
+	"strings"
 	"time"
 )
 
@@ -36,48 +38,58 @@ func (cm *ContactManager) start(pPerfs *Prefs, pPacketProcessor *PacketProcessor
 }
 
 func (cm *ContactManager) readFile() bool {
+	var reader *bytes.Reader
 	nodeFileName := cm.config.NodeDatPath
-
-	f, err := os.Open(nodeFileName)
-	if err != nil {
-		return false
+	if strings.HasPrefix(nodeFileName,"http") {
+		buffer,err := com.DownloadFile(nodeFileName)
+		reader = bytes.NewReader(buffer.Bytes())
+		if err !=nil {
+			com.HhjLog.Panic("Failed to download nodesDat: ", err)
+		}
+	}else if strings.HasPrefix(nodeFileName,"file") {
+		nodeFileName = strings.ReplaceAll(nodeFileName,"file://","")
+		bytesFile, err := ioutil.ReadFile(nodeFileName)
+		if err != nil {
+			return false
+		}
+		reader = bytes.NewReader(bytesFile)
 	}
-	defer f.Close()
+
 
 	var numContacts uint32
-	binary.Read(f, binary.LittleEndian, &numContacts)
+	binary.Read(reader, binary.LittleEndian, &numContacts)
 
 	var version uint32
-	binary.Read(f, binary.LittleEndian, &version)
+	binary.Read(reader, binary.LittleEndian, &version)
 	if !(version >= 1 && version <= 3) {
 		return false
 	}
 
-	binary.Read(f, binary.LittleEndian, &numContacts)
+	binary.Read(reader, binary.LittleEndian, &numContacts)
 	for ; numContacts > 0; numContacts-- {
 		var kadID ID
 		var ip uint32
 		var udpPort uint16
 		var tcpPort uint16
 
-		binary.Read(f, binary.LittleEndian, kadID.getHash())
-		binary.Read(f, binary.LittleEndian, &ip)
-		binary.Read(f, binary.LittleEndian, &udpPort)
-		binary.Read(f, binary.LittleEndian, &tcpPort)
+		binary.Read(reader, binary.LittleEndian, kadID.getHash())
+		binary.Read(reader, binary.LittleEndian, &ip)
+		binary.Read(reader, binary.LittleEndian, &udpPort)
+		binary.Read(reader, binary.LittleEndian, &tcpPort)
 
 		var contactVerion uint8
 		var byType byte
 		if version >= 1 {
-			binary.Read(f, binary.LittleEndian, &contactVerion)
+			binary.Read(reader, binary.LittleEndian, &contactVerion)
 		} else {
-			binary.Read(f, binary.LittleEndian, &byType)
+			binary.Read(reader, binary.LittleEndian, &byType)
 		}
 
 		var kadUDPKey UDPKey
 		var bVerified bool
 		if version >= 2 {
-			kadUDPKey.readFromFile(f)
-			binary.Read(f, binary.LittleEndian, &bVerified)
+			kadUDPKey.readFromFile(reader)
+			binary.Read(reader, binary.LittleEndian, &bVerified)
 		}
 
 		// IP Appears invalid

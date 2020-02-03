@@ -16,7 +16,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"regexp"
 	"strconv"
 	"strings"
@@ -179,9 +178,9 @@ func (we *Web) fakeQBittorrent(w http.ResponseWriter, r *http.Request) {
 			if err == nil {
 				client := &http.Client{}
 				form := url.Values{}
-				form.Add("p", "cambiarPassword")
+				form.Add("p", we.config.EMULEWebPassword)
 				form.Add("w", "password")
-				req, err := http.NewRequest("POST", "http://localhost:4711", strings.NewReader(form.Encode()))
+				req, err := http.NewRequest("POST", we.config.EMuleURL, strings.NewReader(form.Encode()))
 				if err == nil {
 					response, err := client.Do(req)
 					if err==nil {
@@ -191,7 +190,7 @@ func (we *Web) fakeQBittorrent(w http.ResponseWriter, r *http.Request) {
 							content := buf.String()
 							pattern := regexp.MustCompile(`ses=(-?\d*)&`)
 							ses:= pattern.FindStringSubmatch(content)[1]
-							uploadURL := "http://localhost:4711/?ses=" + ses + "&w=transfer&ed2k="+url.QueryEscape(metaInfo.Announce)
+							uploadURL := we.config.EMuleURL +"/?ses=" + ses + "&w=transfer&ed2k="+url.QueryEscape(metaInfo.Announce)
 							response,err := http.Get(uploadURL)
 							if err == nil {
 								println(response.Status)
@@ -249,12 +248,7 @@ func (we *Web) startServer() {
 	http.HandleFunc("/search", we.searchHandler)
 	http.HandleFunc("/download", we.downloadHandler)
 
-	var err error
-	if len(os.Args) > 1 && os.Args[1] == "server" {
-		err = http.ListenAndServe(":80", nil)
-	} else {
-		err = http.ListenAndServe(":66", nil)
-	}
+	err := http.ListenAndServe(":"+strconv.Itoa(we.config.WEBListenPort), nil)
 	if err != nil {
 		com.HhjLog.Panic("Start Web Server failed: ", err)
 	}

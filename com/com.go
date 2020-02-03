@@ -1,7 +1,11 @@
 package com
 
 import (
+	"bufio"
+	"bytes"
 	"github.com/op/go-logging"
+	"io"
+	"net/http"
 	"os"
 	"strings"
 )
@@ -13,6 +17,9 @@ type Config struct {
 	SearchTimeWithoutResults int
 	SearchExpires int
 	NodeDatPath string
+	EMuleURL string
+	EMULEWebPassword string
+	WEBListenPort int
 }
 
 
@@ -103,4 +110,20 @@ func innerSplit2Keywords(s string, ignore string) []string {
 	}
 
 	return newKeys
+}
+
+func DownloadFile(url string) (*bytes.Buffer,error) {
+
+	// Get the data
+	resp, err := http.Get(url)
+	if err != nil {
+		return nil,err
+	}
+	defer resp.Body.Close()
+	//size,_ := strconv.Atoi(resp.Header.Get("Content-Length"))
+	var b bytes.Buffer
+	buf := bufio.NewWriter(&b)
+	// Write the body to file
+	io.Copy(buf, resp.Body)
+	return &b,nil
 }
