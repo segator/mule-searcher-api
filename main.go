@@ -29,7 +29,7 @@ func main() {
 	flag.StringVar(&config.SynologyUsername,"synology-username","","Synology username")
 	flag.StringVar(&config.SynologyPassword,"synology-password","","Synology password")
 	flag.StringVar(&config.SynologyURL,"synology-url","http://192.168.1.20:5000","Synology URL")
-	flag.StringVar(&config.SynologyDestionation,"synology-destionation","","Synology destination path")
+	flag.StringVar(&config.SynologyDestionation,"synology-download-path","","Synology download destination path")
 	flag.Parse()
 	var downloader download.Downloader
 	switch config.EmuleDownloader{

@@ -178,6 +178,7 @@ func (we *Web) fakeQBittorrent(w http.ResponseWriter, r *http.Request) {
 
 			metaInfoFile, err := metainfo.Load(file)
 			if err == nil {
+				com.HhjLog.Infof("Downloading: %s",metaInfoFile.Announce)
 				if !we.downloader.Download(metaInfoFile.Announce) {
 					err = errors.New("Failed to download" + metaInfoFile.Announce)
 				}
