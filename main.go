@@ -5,11 +5,13 @@ import (
 	"hahajing/com"
 	"hahajing/download"
 	"hahajing/kad"
+	"hahajing/publish"
 	"hahajing/web"
 )
 
 var kadInstance kad.Kad
 var webInstance web.Web
+var publisherInstance publish.Publisher
 
 
 func main() {
@@ -23,13 +25,25 @@ func main() {
 	flag.IntVar(&config.SearchTimeWithoutResults,"timeout-noresults",8,"Time to finish search after no more results")
 	flag.IntVar(&config.SearchExpires,"search-cache-timeout",60,"Time to cache searches")
 	flag.IntVar(&config.MaxContacts,"contacts",5000,"Max number of contacts")
+
+	//Send links to download on emule or synology
 	flag.StringVar(&config.EmuleDownloader,"emule-type","emule","Type of Emule Downloader service (emule,synology)")
+	//Emule params
 	flag.StringVar(&config.EMuleURL,"emule-url","http://localhost:4711","Emule URL")
 	flag.StringVar(&config.EMULEWebPassword,"emule-password","admin","admin")
+	//Synology Params
 	flag.StringVar(&config.SynologyUsername,"synology-username","","Synology username")
 	flag.StringVar(&config.SynologyPassword,"synology-password","","Synology password")
 	flag.StringVar(&config.SynologyURL,"synology-url","http://192.168.1.20:5000","Synology URL")
 	flag.StringVar(&config.SynologyDestionation,"synology-download-path","","Synology download destination path")
+
+	flag.StringVar(&config.DownloadPath,"download-path","/downloads","Path where downloads are saved for emule/synology")
+	flag.StringVar(&config.PublishSSHHost,"publish-ssh-host","localhost","SSH Host to publish new downloads")
+	flag.IntVar(&config.PublishSSHPort,"publish-ssh-port",22,"SSH Port of the publisher ssh host")
+	flag.StringVar(&config.PublishSSHUsername,"publish-ssh-username","root","SSH Username of the publisher ssh host")
+	flag.StringVar(&config.PublishSSHPassword,"publish-ssh-password","","SSH Password of the publisher ssh host")
+	flag.StringVar(&config.PublishSSHPath,"publish-ssh-path","","SSH Path of the publisher ssh host")
+
 	flag.Parse()
 	var downloader download.Downloader
 	switch config.EmuleDownloader{
@@ -43,6 +57,19 @@ func main() {
 
 		}
 	}
+	publisher := publish.PublisherSSHConfig{
+		Config:             publish.PublisherConfig{
+			DownloadPath:config.DownloadPath,
+			ValidUploadableFormats: []string{"mkv","mp4","avi"},
+		},
+		PublishSSHHost:     config.PublishSSHHost,
+		PublishSSHUsername:  config.PublishSSHUsername,
+		PublishSSHPassword: config.PublishSSHPassword,
+		PublishSSHPath:     config.PublishSSHPath,
+		PublishSSHPort:     config.PublishSSHPort,
+	}
 	kadInstance.Start(&config)
+	publisher.Start()
 	webInstance.Start(kadInstance.SearchReqCh,&config,downloader)
+
 }

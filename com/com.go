@@ -10,22 +10,28 @@ import (
 	"strings"
 )
 type Config struct {
-	UDPPort  int
-	NumberOfSocket int
-	ExternalUDPPort int
-	TCPPort int
-	MaxContacts int
+	UDPPort                  int
+	NumberOfSocket           int
+	ExternalUDPPort          int
+	TCPPort                  int
+	MaxContacts              int
 	SearchTimeWithoutResults int
-	SearchExpires int
-	NodeDatPath string
-	EmuleDownloader string
-	EMuleURL string
-	EMULEWebPassword string
-	SynologyUsername string
-	SynologyPassword string
-	SynologyURL string
-	SynologyDestionation string
-	WEBListenPort int
+	SearchExpires            int
+	NodeDatPath              string
+	EmuleDownloader          string
+	EMuleURL                 string
+	EMULEWebPassword         string
+	SynologyUsername         string
+	SynologyPassword         string
+	SynologyURL              string
+	SynologyDestionation     string
+	WEBListenPort            int
+	DownloadPath             string
+	PublishSSHHost           string
+	PublishSSHUsername       string
+	PublishSSHPassword       string
+	PublishSSHPath           string
+	PublishSSHPort           int
 }
 
 
