@@ -12,7 +12,7 @@ import (
 	"time"
 )
 const (
-	publisherTimer               = 1
+	publisherTimer               = 120
 
 )
 
