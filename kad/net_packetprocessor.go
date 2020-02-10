@@ -106,9 +106,9 @@ func (pp *PacketProcessor) processPacket(pPacket *Packet) {
 	case kademlia2Ping:
 		pp.processKademlia2Ping(pPacket)
 	case kademlia2Req:
-		pp.processKademlia2Req(pPacket)
+		//pp.processKademlia2Req(pPacket)
 	case kademliaFirewalled2Req:
-		pp.processKademliaFirewalled2Req(pPacket)
+		//pp.processKademliaFirewalled2Req(pPacket)
 	/*case kademlia2SearchSourceReq:
 		println(pPacket)*/
 	default:
