@@ -230,8 +230,8 @@ func (we *Web) searchHandler(w http.ResponseWriter, r *http.Request) {
     var items []*com.Item
     item := com.Item{Type: 0x1, OrgName: strings.Join(myKeyword.SearchKeywords, " "), ChName: ""}
     items = append(items, &item)
-    com.HhjLog.Infof("New search: %#v", items[0])
 	myKeywordStruct := com.NewMyKeywordStruct(myKeyword, items)
+	com.HhjLog.Infof("New search: %#v", q)
 	results :=we.send2Kad(myKeywordStruct)
 
 	bytes,_ :=xml.MarshalIndent(results,"","   ")
