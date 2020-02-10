@@ -51,7 +51,7 @@ func (p *PublisherSSHConfig) Start() bool {
 			return false
 		}
 		p.sshClient = scp.NewClient(p.PublishSSHHost+":"+strconv.Itoa(p.PublishSSHPort), &p.sshClientConfig)
-		p.scheduleRoutine()
+		go p.scheduleRoutine()
 	}
 	return true
 }

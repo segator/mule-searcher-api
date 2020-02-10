@@ -90,24 +90,25 @@ func (ed EmuleDownloader) Download(e2dk string) bool {
 	form.Add("p", ed.Password)
 	form.Add("w", "password")
 	req, err := http.NewRequest("POST", ed.EmuleWebURL, strings.NewReader(form.Encode()))
-	if err == nil {
+	if err !=nil {
+		return false
+	}else  {
 		response, err := client.Do(req)
-		if err==nil {
-			if response.StatusCode == 200 {
-				buf := new(bytes.Buffer)
-				buf.ReadFrom(response.Body)
-				content := buf.String()
-				pattern := regexp.MustCompile(`ses=(-?\d*)&`)
-				ses:= pattern.FindStringSubmatch(content)[1]
-				uploadURL := ed.EmuleWebURL +"/?ses=" + ses + "&w=transfer&ed2k="+url.QueryEscape(e2dk)
-				response,err := http.Get(uploadURL)
-				if err == nil {
-					println(response.Status)
-				}
-			}else{
-				err = errors.New("invalid status:"+ response.Status)
-			}
+		if err!=nil || response.StatusCode != 200 {
+			return false
 		}
+
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(response.Body)
+		content := buf.String()
+		pattern := regexp.MustCompile(`ses=(-?\d*)&`)
+		ses:= pattern.FindStringSubmatch(content)[1]
+		uploadURL := ed.EmuleWebURL +"/?ses=" + ses + "&w=transfer&ed2k="+url.QueryEscape(e2dk)
+		response,err = http.Get(uploadURL)
+		if err != nil || response.StatusCode!=200 {
+			return false
+		}
+
 	}
-	return err==nil
+	return true
 }

@@ -16,6 +16,9 @@ var publisherInstance publish.Publisher
 
 func main() {
 	config := com.Config{}
+
+	flag.StringVar(&config.HTTPUser,"http-user","admin","http auth user")
+	flag.StringVar(&config.HTTPPassword,"http-password","admin","http auth password")
 	flag.IntVar(&config.WEBListenPort,"web-listen-port",80,"Web Listen Port")
 	flag.IntVar(&config.UDPPort,"udp-listen-port",2500,"UDP Listen Port")
 	flag.IntVar(&config.ExternalUDPPort,"public-udp-listen-port",2500,"Public UDP Listen Port")

@@ -10,6 +10,8 @@ import (
 	"strings"
 )
 type Config struct {
+	HTTPUser                 string
+	HTTPPassword             string
 	UDPPort                  int
 	NumberOfSocket           int
 	ExternalUDPPort          int

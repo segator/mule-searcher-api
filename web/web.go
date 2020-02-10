@@ -160,43 +160,63 @@ func (we *Web) downloadHandler(w http.ResponseWriter, r *http.Request) {
 
 func (we *Web) fakeQBittorrent(w http.ResponseWriter, r *http.Request) {
 	if strings.Contains(r.URL.RequestURI(),"login"){
-		w.WriteHeader(200)
-		w.Header().Add("Content-Length","3")
-		w.Write([]byte("Ok."))
+		r.ParseForm()
+		if r.FormValue("password") == we.config.HTTPPassword {
+			cookie := http.Cookie{
+				Name:    "token",
+				Value:   r.FormValue("password"),
+				SameSite: http.SameSiteStrictMode,
+				Path:"/",
+
+
+			}
+			http.SetCookie(w, &cookie)
+			w.WriteHeader(200)
+			w.Header().Add("Content-Length","3")
+			w.Write([]byte("Ok."))
+
+		}else{
+			w.WriteHeader(401)
+			w.Write([]byte("Unauthorised.\n"))
+			return
+		}
 	}else if strings.Contains(r.URL.RequestURI(),"webapiVersion"){
 		w.WriteHeader(200)
 		w.Header().Add("Content-Length","3")
 		w.Write([]byte("2.4"))
 	}else if strings.Contains(r.URL.RequestURI(),"torrents/add"){
 		//r.MultipartForm.File
-		r.ParseForm()
-		file,_, err := r.FormFile("torrents")
-		if err == nil {
-			defer file.Close()
-			//buf := new(bytes.Buffer)
-			//buf.ReadFrom(file)
-
-			metaInfoFile, err := metainfo.Load(file)
+		if len(r.Cookies()) > 0  && r.Cookies()[0].Name == "token"  && r.Cookies()[0].Value ==  we.config.HTTPPassword {
+			r.ParseForm()
+			file,_, err := r.FormFile("torrents")
 			if err == nil {
-				com.HhjLog.Infof("Downloading: %s",metaInfoFile.Announce)
-				if !we.downloader.Download(metaInfoFile.Announce) {
-					err = errors.New("Failed to download" + metaInfoFile.Announce)
+				defer file.Close()
+				//buf := new(bytes.Buffer)
+				//buf.ReadFrom(file)
+
+				metaInfoFile, err := metainfo.Load(file)
+				if err == nil {
+					com.HhjLog.Infof("Downloading: %s",metaInfoFile.Announce)
+					if !we.downloader.Download(metaInfoFile.Announce) {
+						err = errors.New("Failed to download" + metaInfoFile.Announce)
+					}
 				}
-			}
-			if err == nil {
-				w.WriteHeader(200)
-				w.Header().Add("Content-Length","3")
-				w.Write([]byte("Ok."))
+				if err == nil {
+					w.WriteHeader(200)
+					w.Header().Add("Content-Length","3")
+					w.Write([]byte("Ok."))
+				}else{
+					w.WriteHeader(500)
+					w.Header().Add("Content-Length","3")
+					w.Write([]byte("KO."))
+				}
+
 			}else{
-				w.WriteHeader(500)
-				w.Header().Add("Content-Length","3")
-				w.Write([]byte("KO."))
+				w.WriteHeader(404)
 			}
-
 		}else{
-			w.WriteHeader(404)
+			w.WriteHeader(403)
 		}
-
 	}else{
 		println(r.URL.RequestURI())
 	}
@@ -219,6 +239,20 @@ func (we *Web) searchHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write(bytes)
 }
 
+func BasicAuth(handler http.HandlerFunc,  token string) http.HandlerFunc {
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		t:=r.URL.Query().Get("token")
+
+		if t != token {
+			w.WriteHeader(401)
+			w.Write([]byte("Unauthorised.\n"))
+			return
+		}
+
+		handler(w, r)
+	}
+}
 
 
 
@@ -227,7 +261,7 @@ func (we *Web) startServer() {
 	rtr := mux.NewRouter()
 	rtr.HandleFunc("/api/{name:.*}", we.fakeQBittorrent)
 	http.Handle("/api/", rtr)
-	http.HandleFunc("/search", we.searchHandler)
+	http.HandleFunc("/search", BasicAuth(we.searchHandler,we.config.HTTPPassword))
 	http.HandleFunc("/download", we.downloadHandler)
 
 	err := http.ListenAndServe(":"+strconv.Itoa(we.config.WEBListenPort), nil)
