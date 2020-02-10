@@ -66,7 +66,6 @@ func (p *PublisherSSHConfig) scheduleRoutine() {
 				com.HhjLog.Error("Error when processing download folder: %s %s", p.Config.DownloadPath, err)
 			}else{
 				for _,uploadableFile := range uploadableFiles {
-					com.HhjLog.Info("uploading " + uploadableFile.path + " to " + p.PublishSSHHost + ":" +strconv.Itoa(p.PublishSSHPort)+" "+p.PublishSSHPath)
 					err := p.sshClient.Connect()
 					if err != nil {
 						com.HhjLog.Error("Couldn't establish a connection to the remote server ", err)
@@ -86,7 +85,7 @@ func (p *PublisherSSHConfig) scheduleRoutine() {
 					}
 					f.Close()
 					if err != nil {
-						com.HhjLog.Error("Error on publish " + uploadableFile.path +"  on" + p.PublishSSHHost + ":" +strconv.Itoa(p.PublishSSHPort)+" "+p.PublishSSHPath)
+						com.HhjLog.Error("Error on publish " + uploadableFile.path +"/"+uploadableFile.info.Name() + "  on" + p.PublishSSHHost + ":" +strconv.Itoa(p.PublishSSHPort)+" "+p.PublishSSHPath)
 					}
 
 				}
