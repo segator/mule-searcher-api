@@ -85,7 +85,7 @@ func (p *PublisherSSHConfig) scheduleRoutine() {
 					}
 					f.Close()
 					if err != nil {
-						com.HhjLog.Error("Error on publish " + uploadableFile.path +"/"+uploadableFile.info.Name() + "  on" + p.PublishSSHHost + ":" +strconv.Itoa(p.PublishSSHPort)+" "+p.PublishSSHPath)
+						com.HhjLog.Error("Error on publish " + uploadableFile.path +"/"+uploadableFile.info.Name() + "  on " + p.PublishSSHHost + ":" +strconv.Itoa(p.PublishSSHPort)+" "+p.PublishSSHPath)
 					}
 
 				}
