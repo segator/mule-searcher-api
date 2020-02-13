@@ -92,10 +92,8 @@ func (p *PublisherSSHConfig) uploadFile(sourceFile FileInfo) error {
 	}
 	defer client.Close()
 	destFileString := p.PublishSSHPath+"/"+sourceFile.info.Name()
-	destFileStat,err := client.Stat(destFileString)
-	if err!= nil {
-		return err
-	}
+	destFileStat,_ := client.Stat(destFileString)
+
 	if destFileStat == nil || destFileStat.Size() != sourceFileStat.Size() {
 		dstFile,err := client.Create(destFileString)
 		if err != nil {
