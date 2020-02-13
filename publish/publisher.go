@@ -1,11 +1,13 @@
 package publish
 
 import (
-	scp "github.com/bramvdbogaerde/go-scp"
 	"github.com/bramvdbogaerde/go-scp/auth"
+	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
 	"hahajing/com"
+	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -33,7 +35,7 @@ type PublisherSSHConfig struct {
 	PublishSSHPath           string
 	PublishSSHPort           int
 	sshClientConfig          ssh.ClientConfig
-	sshClient                scp.Client
+	sshConnection            ssh.Client
 }
 
 type FileInfo struct {
@@ -50,7 +52,11 @@ func (p *PublisherSSHConfig) Start() bool {
 			com.HhjLog.Error("No SSH Password were set")
 			return false
 		}
-		p.sshClient = scp.NewClient(p.PublishSSHHost+":"+strconv.Itoa(p.PublishSSHPort), &p.sshClientConfig)
+		conn, err := ssh.Dial("tcp", p.PublishSSHHost+":"+strconv.Itoa(p.PublishSSHPort), &p.sshClientConfig)
+		if err != nil {
+			log.Fatal(err)
+		}
+		p.sshConnection = *conn
 		go p.scheduleRoutine()
 	}
 	return true
@@ -66,26 +72,45 @@ func (p *PublisherSSHConfig) scheduleRoutine() {
 				com.HhjLog.Error("Error when processing download folder: %s %s", p.Config.DownloadPath, err)
 			}else{
 				for _,uploadableFile := range uploadableFiles {
-					err := p.sshClient.Connect()
+					f, _ := os.Open(uploadableFile.path+"/"+uploadableFile.info.Name())
+
+					session, err := p.sshConnection.NewSession()
 					if err != nil {
-						com.HhjLog.Error("Couldn't establish a connection to the remote server ", err)
+						com.HhjLog.Error("Error when openning ssh session ", err)
 						continue
 					}
-
-					f, _ := os.Open(uploadableFile.path+"/"+uploadableFile.info.Name())
-					fileInfo, _ := f.Stat()
-					p.sshClient.Connect()
-					out,err := p.sshClient.Session.Output("ls -lah \"" + p.PublishSSHPath+"/"+uploadableFile.info.Name()+ "\" > /dev/null 2>&1  && echo $?")
-					p.sshClient.Close()
+					out,err := session.Output("ls -lah \"" + p.PublishSSHPath+"/"+uploadableFile.info.Name()+ "\" > /dev/null 2>&1  && echo $?")
+					defer session.Close()
 					if string(out) != "0\n"{
-						p.sshClient.Connect()
-						com.HhjLog.Info("Uploading " + uploadableFile.path+"/"+uploadableFile.info.Name() + " on " + p.PublishSSHHost + ":" +strconv.Itoa(p.PublishSSHPort)+" "+p.PublishSSHPath)
-						p.sshClient.Copy(f, p.PublishSSHPath+"/"+uploadableFile.info.Name(), "0655",fileInfo.Size())
-						p.sshClient.Close()
+						client, err := sftp.NewClient(&p.sshConnection)
+						if err != nil {
+							com.HhjLog.Error("Couldn't establish a connection to the remote server ", err)
+							continue
+						}
+						destFileString := p.PublishSSHPath+"/"+uploadableFile.info.Name()
+						dstFile,err := client.Create(destFileString)
+						if err != nil {
+							com.HhjLog.Error("Error on create destination file ",destFileString,err)
+							continue
+						}
+
+						com.HhjLog.Info("Uploading " + uploadableFile.path+"/"+uploadableFile.info.Name() + " ---> " + p.PublishSSHHost + ":" +strconv.Itoa(p.PublishSSHPort)+""+p.PublishSSHPath)
+						bytes, err := io.Copy(dstFile, f)
+						if err != nil {
+							log.Fatal(err)
+						}
+						dstFile.Close()
+						f.Close()
+						com.HhjLog.Infof("%d bytes copied\n", bytes)
 					}
-					f.Close()
+
 					if err != nil {
-						com.HhjLog.Error("Error on publish " + uploadableFile.path +"/"+uploadableFile.info.Name() + "  on " + p.PublishSSHHost + ":" +strconv.Itoa(p.PublishSSHPort)+" "+p.PublishSSHPath)
+						exitError,ok := err.(*ssh.ExitError)
+						if ok{
+							com.HhjLog.Error("SSH Error on publish " + strconv.Itoa(exitError.ExitStatus()))
+						}else{
+							com.HhjLog.Error("Error on publish " + uploadableFile.path +"/"+uploadableFile.info.Name() + "  on " + p.PublishSSHHost + ":" +strconv.Itoa(p.PublishSSHPort)+" "+p.PublishSSHPath)
+						}
 					}
 
 				}

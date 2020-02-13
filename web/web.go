@@ -186,7 +186,8 @@ func (we *Web) fakeQBittorrent(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("2.4"))
 	}else if strings.Contains(r.URL.RequestURI(),"torrents/add"){
 		//r.MultipartForm.File
-		if len(r.Cookies()) > 0  && r.Cookies()[0].Name == "token"  && r.Cookies()[0].Value ==  we.config.HTTPPassword {
+		token:=r.URL.Query().Get("token")
+		if (len(r.Cookies()) > 0  && r.Cookies()[0].Name == "token" && r.Cookies()[0].Value ==  we.config.HTTPPassword) || token == we.config.HTTPPassword {
 			r.ParseForm()
 			file,_, err := r.FormFile("torrents")
 			if err == nil {
