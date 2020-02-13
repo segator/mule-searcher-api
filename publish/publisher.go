@@ -1,6 +1,8 @@
 package publish
 
 import (
+	"errors"
+	"fmt"
 	"github.com/bramvdbogaerde/go-scp/auth"
 	"github.com/pkg/sftp"
 	"golang.org/x/crypto/ssh"
@@ -14,7 +16,7 @@ import (
 	"time"
 )
 const (
-	publisherTimer               = 120
+	publisherTimer               = 1
 
 )
 
@@ -72,51 +74,46 @@ func (p *PublisherSSHConfig) scheduleRoutine() {
 				com.HhjLog.Error("Error when processing download folder: %s %s", p.Config.DownloadPath, err)
 			}else{
 				for _,uploadableFile := range uploadableFiles {
-					f, _ := os.Open(uploadableFile.path+"/"+uploadableFile.info.Name())
-
-					session, err := p.sshConnection.NewSession()
-					if err != nil {
-						com.HhjLog.Error("Error when openning ssh session ", err)
-						continue
-					}
-					out,err := session.Output("ls -lah \"" + p.PublishSSHPath+"/"+uploadableFile.info.Name()+ "\" > /dev/null 2>&1  && echo $?")
-					defer session.Close()
-					if string(out) != "0\n"{
-						client, err := sftp.NewClient(&p.sshConnection)
-						if err != nil {
-							com.HhjLog.Error("Couldn't establish a connection to the remote server ", err)
-							continue
-						}
-						destFileString := p.PublishSSHPath+"/"+uploadableFile.info.Name()
-						dstFile,err := client.Create(destFileString)
-						if err != nil {
-							com.HhjLog.Error("Error on create destination file ",destFileString,err)
-							continue
-						}
-
-						com.HhjLog.Info("Uploading " + uploadableFile.path+"/"+uploadableFile.info.Name() + " ---> " + p.PublishSSHHost + ":" +strconv.Itoa(p.PublishSSHPort)+""+p.PublishSSHPath)
-						bytes, err := io.Copy(dstFile, f)
-						if err != nil {
-							log.Fatal(err)
-						}
-						dstFile.Close()
-						f.Close()
-						com.HhjLog.Infof("%d bytes copied\n", bytes)
-					}
-
-					if err != nil {
-						exitError,ok := err.(*ssh.ExitError)
-						if ok{
-							com.HhjLog.Error("SSH Error on publish " + strconv.Itoa(exitError.ExitStatus()))
-						}else{
-							com.HhjLog.Error("Error on publish " + uploadableFile.path +"/"+uploadableFile.info.Name() + "  on " + p.PublishSSHHost + ":" +strconv.Itoa(p.PublishSSHPort)+" "+p.PublishSSHPath)
-						}
-					}
+					p.uploadFile(uploadableFile)
 
 				}
 			}
 		}
 	}
+}
+
+func (p *PublisherSSHConfig) uploadFile(sourceFile FileInfo) error {
+	f, _ := os.Open(sourceFile.path+"/"+sourceFile.info.Name())
+	defer f.Close()
+	sourceFileStat,_:=f.Stat()
+	client, err := sftp.NewClient(&p.sshConnection)
+	if err != nil {
+		return err
+	}
+	defer client.Close()
+	destFileString := p.PublishSSHPath+"/"+sourceFile.info.Name()
+	destFileStat,err := client.Stat(destFileString)
+	if err!= nil {
+		return err
+	}
+	if destFileStat == nil || destFileStat.Size() != sourceFileStat.Size() {
+		dstFile,err := client.Create(destFileString)
+		if err != nil {
+			return err
+		}
+		defer dstFile.Close()
+		com.HhjLog.Info("Uploading " + sourceFile.path+"/"+sourceFile.info.Name() + " ---> " + p.PublishSSHHost + ":" +strconv.Itoa(p.PublishSSHPort)+""+p.PublishSSHPath)
+		bytes, err := io.CopyN(dstFile, f,sourceFileStat.Size())
+		if err != nil {
+			return err
+		}
+
+
+		if bytes != sourceFileStat.Size() {
+			return  errors.New(fmt.Sprintf("%d bytes copied from %d ", bytes, sourceFileStat.Size()))
+		}
+	}
+	return err
 }
 
 func getUploadableFiles(path string, extensions []string) ([]FileInfo,error)  {
