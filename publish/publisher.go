@@ -9,7 +9,6 @@ import (
 	"hahajing/com"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -37,7 +36,6 @@ type PublisherSSHConfig struct {
 	PublishSSHPath           string
 	PublishSSHPort           int
 	sshClientConfig          ssh.ClientConfig
-	sshConnection            ssh.Client
 }
 
 type FileInfo struct {
@@ -54,11 +52,7 @@ func (p *PublisherSSHConfig) Start() bool {
 			com.HhjLog.Error("No SSH Password were set")
 			return false
 		}
-		conn, err := ssh.Dial("tcp", p.PublishSSHHost+":"+strconv.Itoa(p.PublishSSHPort), &p.sshClientConfig)
-		if err != nil {
-			log.Fatal(err)
-		}
-		p.sshConnection = *conn
+
 		go p.scheduleRoutine()
 	}
 	return true
@@ -74,7 +68,10 @@ func (p *PublisherSSHConfig) scheduleRoutine() {
 				com.HhjLog.Error("Error when processing download folder: %s %s", p.Config.DownloadPath, err)
 			}else{
 				for _,uploadableFile := range uploadableFiles {
-					p.uploadFile(uploadableFile)
+					err := p.uploadFile(uploadableFile)
+					if err !=nil {
+						com.HhjLog.Errorf("An error ocurrend when uploading %s",uploadableFile.path,err)
+					}
 
 				}
 			}
@@ -83,10 +80,15 @@ func (p *PublisherSSHConfig) scheduleRoutine() {
 }
 
 func (p *PublisherSSHConfig) uploadFile(sourceFile FileInfo) error {
+	conn, err := ssh.Dial("tcp", p.PublishSSHHost+":"+strconv.Itoa(p.PublishSSHPort), &p.sshClientConfig)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
 	f, _ := os.Open(sourceFile.path+"/"+sourceFile.info.Name())
 	defer f.Close()
 	sourceFileStat,_:=f.Stat()
-	client, err := sftp.NewClient(&p.sshConnection)
+	client, err := sftp.NewClient(conn)
 	if err != nil {
 		return err
 	}
@@ -101,7 +103,7 @@ func (p *PublisherSSHConfig) uploadFile(sourceFile FileInfo) error {
 		}
 		defer dstFile.Close()
 		com.HhjLog.Info("Uploading " + sourceFile.path+"/"+sourceFile.info.Name() + " ---> " + p.PublishSSHHost + ":" +strconv.Itoa(p.PublishSSHPort)+""+p.PublishSSHPath)
-		bytes, err := io.CopyN(dstFile, f,sourceFileStat.Size())
+		bytes, err := io.Copy(dstFile, f)
 		if err != nil {
 			return err
 		}
