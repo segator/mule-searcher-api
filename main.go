@@ -30,7 +30,7 @@ func main() {
 	flag.IntVar(&config.MaxContacts,"contacts",5000,"Max number of contacts")
 
 	//Send links to download on emule or synology
-	flag.StringVar(&config.EmuleDownloader,"emule-type","emule","Type of Emule Downloader service (emule,synology)")
+	flag.StringVar(&config.EmuleDownloader,"emule-type","emule","Type of Emule Downloader service (emule,synology,amulecmd)")
 	//Emule params
 	flag.StringVar(&config.EMuleURL,"emule-url","http://localhost:4711","Emule URL")
 	flag.StringVar(&config.EMULEWebPassword,"emule-password","admin","admin")
@@ -39,6 +39,10 @@ func main() {
 	flag.StringVar(&config.SynologyPassword,"synology-password","","Synology password")
 	flag.StringVar(&config.SynologyURL,"synology-url","http://192.168.1.20:5000","Synology URL")
 	flag.StringVar(&config.SynologyDestionation,"synology-download-path","","Synology download destination path")
+
+	flag.StringVar(&config.AmuleHost,"amule-host","localhost","Amule Daemon Host")
+	flag.IntVar(&config.AmulePort,"amule-port",4712,"Amule Daemon Port")
+	flag.StringVar(&config.AmulePassword,"amule-password","","Amule Daemon Password")
 
 	flag.StringVar(&config.DownloadPath,"download-path","/downloads","Path where downloads are saved for emule/synology")
 	flag.StringVar(&config.PublishSSHHost,"publish-ssh-host","localhost","SSH Host to publish new downloads")
@@ -57,8 +61,9 @@ func main() {
 			SynologyUser:config.SynologyUsername,
 			SynologyURL:config.SynologyURL,
 			SynologyDestionation: config.SynologyDestionation,
-
 		}
+	case "amule":
+		downloader = download.AmuleDownloader{AmuleHost:config.AmuleHost, AmulePort:config.AmulePort,AmulePassword:config.AmulePassword,}
 	}
 	publisher := publish.PublisherSSHConfig{
 		Config:             publish.PublisherConfig{

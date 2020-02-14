@@ -23,10 +23,15 @@ type Config struct {
 	EmuleDownloader          string
 	EMuleURL                 string
 	EMULEWebPassword         string
+
 	SynologyUsername         string
 	SynologyPassword         string
 	SynologyURL              string
 	SynologyDestionation     string
+
+	AmuleHost                string
+	AmulePort                int
+	AmulePassword            string
 	WEBListenPort            int
 	DownloadPath             string
 	PublishSSHHost           string

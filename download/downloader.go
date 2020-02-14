@@ -4,10 +4,15 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"hahajing/com"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -25,6 +30,11 @@ type SynologyMuleDownloader struct {
 	SynologyPassword string
 	SynologyDestionation string
 }
+type AmuleDownloader struct {
+	AmuleHost string
+	AmulePort int
+	AmulePassword string
+}
 type SynologyAuthResponse struct {
 	Data struct {
 		Sid string `json:"sid"`
@@ -38,6 +48,37 @@ func parseParams(url *url.URL,params map[string]string)  {
 	}
 	url.RawQuery = strings.Replace(query.Encode(), "+", "%20", -1)
 }
+func (ad AmuleDownloader) Download(e2dk string) bool {
+	var outbuf, errbuf bytes.Buffer
+	binary, err := exec.LookPath("amulecmd")
+	if err != nil {
+		ex, err := os.Executable()
+		if err != nil {
+			return false
+		}
+		exPath := filepath.Dir(ex)
+		binary = exPath + "/amulecmd"
+	}
+	args := []string{"--host="+ad.AmuleHost,"--port="+strconv.Itoa(ad.AmulePort), "--password="+ad.AmulePassword, "--command=add "+e2dk+""}
+	com.HhjLog.Infof("%s %v",binary,args)
+	cmd := exec.Command(binary, args...)
+	cmd.Stdout = &outbuf
+	cmd.Stderr = &errbuf
+	err = cmd.Run()
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			if exitError.ExitCode() != 0  {
+				com.HhjLog.Errorf("Error on execute %s %v exit code %d",binary,args,exitError.ExitCode())
+				return false
+			}
+		}else{
+			com.HhjLog.Errorf("Error on execute %s %v",binary,args)
+			return false
+		}
+	}
+	return true
+}
+
 func (ed SynologyMuleDownloader) Download(e2dk string) bool {
 	cookieJar, _ := cookiejar.New(nil)
 	httpClient := &http.Client{
