@@ -7,6 +7,7 @@ import (
 	"hahajing/kad"
 	"hahajing/publish"
 	"hahajing/web"
+	"time"
 )
 
 var kadInstance kad.Kad
@@ -50,6 +51,9 @@ func main() {
 	flag.StringVar(&config.PublishSSHUsername,"publish-ssh-username","root","SSH Username of the publisher ssh host")
 	flag.StringVar(&config.PublishSSHPassword,"publish-ssh-password","","SSH Password of the publisher ssh host")
 	flag.StringVar(&config.PublishSSHPath,"publish-ssh-path","","SSH Path of the publisher ssh host")
+	flag.IntVar(&config.PublishScanTime,"publish-scan-time",60,"Scan Download folder every x minutes")
+	flag.IntVar(&config.PublishMinimumTime,"publish-minimum-push-time",60,"minimum life time of a file to be selected as publishable in minutes")
+
 
 	flag.Parse()
 	var downloader download.Downloader
@@ -70,11 +74,13 @@ func main() {
 			DownloadPath:config.DownloadPath,
 			ValidUploadableFormats: []string{"mkv","mp4","avi"},
 		},
+		ScanTime: time.Duration(config.PublishScanTime) * time.Minute,
 		PublishSSHHost:     config.PublishSSHHost,
 		PublishSSHUsername:  config.PublishSSHUsername,
 		PublishSSHPassword: config.PublishSSHPassword,
 		PublishSSHPath:     config.PublishSSHPath,
 		PublishSSHPort:     config.PublishSSHPort,
+		PublishMinimumTime: time.Duration(config.PublishMinimumTime) * time.Minute,
 	}
 	kadInstance.Start(&config)
 	publisher.Start()

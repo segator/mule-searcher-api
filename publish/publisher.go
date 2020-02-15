@@ -14,10 +14,7 @@ import (
 	"strings"
 	"time"
 )
-const (
-	publisherTimer               = 1
 
-)
 
 type Publisher interface {
 	Start() bool
@@ -30,11 +27,13 @@ type PublisherConfig struct {
 
 type PublisherSSHConfig struct {
 	Config PublisherConfig
+	ScanTime                 time.Duration
 	PublishSSHHost           string
 	PublishSSHUsername		 string
 	PublishSSHPassword       string
 	PublishSSHPath           string
 	PublishSSHPort           int
+	PublishMinimumTime       time.Duration
 	sshClientConfig          ssh.ClientConfig
 }
 
@@ -59,13 +58,13 @@ func (p *PublisherSSHConfig) Start() bool {
 }
 
 func (p *PublisherSSHConfig) scheduleRoutine() {
-	tick := time.NewTicker(publisherTimer * time.Second)
+	tick := time.NewTicker(p.ScanTime)
 	for {
 		select {
 		case <-tick.C:
-			uploadableFiles,err := getUploadableFiles(p.Config.DownloadPath,p.Config.ValidUploadableFormats)
+			uploadableFiles,err := getUploadableFiles(p.Config.DownloadPath,p.Config.ValidUploadableFormats,p.PublishMinimumTime)
 			if err!=nil {
-				com.HhjLog.Error("Error when processing download folder: %s %s", p.Config.DownloadPath, err)
+				com.HhjLog.Errorf("Error when processing download folder: %s %s", p.Config.DownloadPath, err)
 			}else{
 				for _,uploadableFile := range uploadableFiles {
 					err := p.uploadFile(uploadableFile)
@@ -116,7 +115,7 @@ func (p *PublisherSSHConfig) uploadFile(sourceFile FileInfo) error {
 	return err
 }
 
-func getUploadableFiles(path string, extensions []string) ([]FileInfo,error)  {
+func getUploadableFiles(path string, extensions []string,minimumTime time.Duration) ([]FileInfo,error)  {
 	var files []FileInfo
 	nowTime := time.Now()
 	ReadedFiles,err :=ioutil.ReadDir(path)
@@ -125,7 +124,7 @@ func getUploadableFiles(path string, extensions []string) ([]FileInfo,error)  {
 	}
 	for _,info := range ReadedFiles {
 		toLower := strings.ToLower(info.Name())
-		uploadablePeriodTime := info.ModTime().Add(5 * time.Minute)
+		uploadablePeriodTime := info.ModTime().Add(minimumTime)
 		if !info.IsDir() && uploadablePeriodTime.Before(nowTime) {
 			for _,extension := range extensions {
 				if strings.HasSuffix(toLower,extension) {

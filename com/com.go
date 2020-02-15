@@ -39,6 +39,8 @@ type Config struct {
 	PublishSSHPassword       string
 	PublishSSHPath           string
 	PublishSSHPort           int
+	PublishScanTime          int
+	PublishMinimumTime       int
 }
 
 
