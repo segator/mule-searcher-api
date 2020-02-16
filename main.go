@@ -9,9 +9,11 @@ import (
 	"hahajing/publish"
 	"hahajing/web"
 	"os"
+	"os/signal"
 	"regexp"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -30,7 +32,7 @@ func (i *arrayFlags) Set(value string) error {
 
 func main() {
 	config := com.Config{}
-	flag.BoolVar(&config.EnableSearcher,"search-enable",true,"Enable searcher? by default true")
+	flag.StringVar(&config.EnableSearcher,"search-enable","true","Enable searcher? by default true")
 	flag.StringVar(&config.HTTPUser,"http-user","admin","http auth user")
 	flag.StringVar(&config.HTTPPassword,"http-password","admin","http auth password")
 	flag.IntVar(&config.WEBListenPort,"web-listen-port",80,"Web Listen Port")
@@ -90,29 +92,41 @@ func main() {
 		}
 		multiDownloader.DownloaderList = append(multiDownloader.DownloaderList,downloader)
 	}
+	publisher := publish.PublisherSSHConfig{
+		Config:             publish.PublisherConfig{
+			DownloadPath:config.DownloadPath,
+			ValidUploadableFormats: []string{"mkv","mp4","avi"},
+		},
+		ScanTime: time.Duration(config.PublishScanTime) * time.Minute,
+		PublishSSHHost:     config.PublishSSHHost,
+		PublishSSHUsername:  config.PublishSSHUsername,
+		PublishSSHPassword: config.PublishSSHPassword,
+		PublishSSHPath:     config.PublishSSHPath,
+		PublishSSHPort:     config.PublishSSHPort,
+		PublishMinimumTime: time.Duration(config.PublishMinimumTime) * time.Minute,
+	}
 
 
-	if config.EnableSearcher {
+	sigs := make(chan os.Signal, 1)
+	done := make(chan bool, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		sig := <-sigs
+		fmt.Println()
+		fmt.Println(sig)
+		done <- true
+	}()
+
+	if strings.ToLower(config.EnableSearcher)=="true" {
 		kadInstance.Start(&config)
 		webInstance.Start(kadInstance.SearchReqCh,&config,multiDownloader)
 	}
 
 	if config.PublishSSHPath != "" {
-		publisher := publish.PublisherSSHConfig{
-			Config:             publish.PublisherConfig{
-				DownloadPath:config.DownloadPath,
-				ValidUploadableFormats: []string{"mkv","mp4","avi"},
-			},
-			ScanTime: time.Duration(config.PublishScanTime) * time.Minute,
-			PublishSSHHost:     config.PublishSSHHost,
-			PublishSSHUsername:  config.PublishSSHUsername,
-			PublishSSHPassword: config.PublishSSHPassword,
-			PublishSSHPath:     config.PublishSSHPath,
-			PublishSSHPort:     config.PublishSSHPort,
-			PublishMinimumTime: time.Duration(config.PublishMinimumTime) * time.Minute,
-		}
 		publisher.Start()
 	}
-
+	fmt.Println("Ctrl+C to stop")
+	<-done
+	fmt.Println("Exiting...")
 
 }

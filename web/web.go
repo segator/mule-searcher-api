@@ -42,7 +42,7 @@ func (we *Web) Start(searchReqCh chan *kad.SearchReq,config *com.Config, downloa
 	we.config = config
 	we.downloader = downloader
 
-	we.startServer()
+	go we.startServer()
 }
 
 
