@@ -11,7 +11,7 @@ import (
 )
 type Config struct {
 	//Searcher parameters
-	EnableSearcher           bool
+	EnableSearcher           string
 	WEBListenPort            int
 	HTTPUser                 string
 	HTTPPassword             string
