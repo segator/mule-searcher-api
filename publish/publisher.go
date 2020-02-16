@@ -101,7 +101,7 @@ func (p *PublisherSSHConfig) uploadFile(sourceFile FileInfo) error {
 			return err
 		}
 		defer dstFile.Close()
-		com.HhjLog.Info("Uploading " + sourceFile.path+"/"+sourceFile.info.Name() + " ---> " + p.PublishSSHHost + ":" +strconv.Itoa(p.PublishSSHPort)+""+p.PublishSSHPath)
+		com.HhjLog.Infof("Uploading name:%s/%s size: %dMB ---> %s:%d/%s",sourceFile.path,sourceFile.info.Name(),sourceFileStat.Size()/1048576,p.PublishSSHHost,p.PublishSSHPort,p.PublishSSHPath)
 		bytes, err := io.Copy(dstFile, f)
 		if err != nil {
 			return err

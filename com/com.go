@@ -10,6 +10,9 @@ import (
 	"strings"
 )
 type Config struct {
+	//Searcher parameters
+	EnableSearcher           bool
+	WEBListenPort            int
 	HTTPUser                 string
 	HTTPPassword             string
 	UDPPort                  int
@@ -20,19 +23,8 @@ type Config struct {
 	SearchTimeWithoutResults int
 	SearchExpires            int
 	NodeDatPath              string
-	EmuleDownloader          string
-	EMuleURL                 string
-	EMULEWebPassword         string
 
-	SynologyUsername         string
-	SynologyPassword         string
-	SynologyURL              string
-	SynologyDestionation     string
-
-	AmuleHost                string
-	AmulePort                int
-	AmulePassword            string
-	WEBListenPort            int
+	//Publisher parameters
 	DownloadPath             string
 	PublishSSHHost           string
 	PublishSSHUsername       string

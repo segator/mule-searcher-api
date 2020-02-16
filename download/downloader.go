@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"hahajing/com"
+	"math/rand"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -18,6 +19,10 @@ import (
 
 type Downloader interface {
 	Download(e2dk string) bool
+}
+
+type MultiDownloader struct {
+	DownloaderList []Downloader
 }
 
 type EmuleDownloader struct {
@@ -48,6 +53,33 @@ func parseParams(url *url.URL,params map[string]string)  {
 	}
 	url.RawQuery = strings.Replace(query.Encode(), "+", "%20", -1)
 }
+func (md MultiDownloader) Download(e2dk string) bool {
+	var failedDownloaders []int
+	downloadSuccess:=false
+	fail := false
+
+	for randomNumber := 0; !downloadSuccess && !fail; randomNumber = rand.Intn(len(md.DownloaderList)) {
+		alreadyFailed := false
+		for _, failedIndex := range failedDownloaders{
+			if failedIndex==randomNumber {
+				alreadyFailed=true
+				continue
+			}
+		}
+		if alreadyFailed{
+			continue
+		}
+		downloadSuccess = md.DownloaderList[randomNumber].Download(e2dk)
+		if !downloadSuccess{
+			failedDownloaders = append(failedDownloaders,randomNumber)
+			if len(failedDownloaders) == len(md.DownloaderList) {
+				fail=true
+			}
+		}
+	}
+	return downloadSuccess
+}
+
 func (ad AmuleDownloader) Download(e2dk string) bool {
 	var outbuf, errbuf bytes.Buffer
 	binary, err := exec.LookPath("amulecmd")

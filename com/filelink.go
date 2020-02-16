@@ -54,9 +54,7 @@ func parseName(name string, orgName string) bool {
 	keywords := Split2Keywords(orgName)
 	pattern := strings.Join(keywords, ".*")
 	match, _ := regexp.MatchString(pattern, name)
-	if strings.Contains(name,"modern family 6x01.la.larga.luna.de.miel") {
-		println("FOUND!!!" + name)
-	}
+
 	return match
 }
 

@@ -113,9 +113,7 @@ func (we *Web) downloadHandler(w http.ResponseWriter, r *http.Request) {
 	name:=downloadLinkDecodedSplited[0]
 	size,_:=strconv.Atoi(downloadLinkDecodedSplited[1])
 	hash:=downloadLinkDecodedSplited[2]
-	if len(hash) != 32 {
-		println("Invalid Hash:" + hash + "|" + name)
-	}
+
 
 	metaInfo:= metainfo.MetaInfo{
 		Announce:     fmt.Sprintf("ed2k://|file|%s|%d|%s|/",com.EncodeURLUtf8(com.StripInvalidFileNameChars(name)),size,hash),
@@ -218,8 +216,6 @@ func (we *Web) fakeQBittorrent(w http.ResponseWriter, r *http.Request) {
 		}else{
 			w.WriteHeader(403)
 		}
-	}else{
-		println(r.URL.RequestURI())
 	}
 }
 
@@ -236,7 +232,6 @@ func (we *Web) searchHandler(w http.ResponseWriter, r *http.Request) {
 	results :=we.send2Kad(myKeywordStruct)
 
 	bytes,_ :=xml.MarshalIndent(results,"","   ")
-	//bytes,_ :=json.MarshalIndent(results,"","\t")
 	w.Write(bytes)
 }
 
