@@ -7,6 +7,7 @@ import (
 	"hahajing/download"
 	"hahajing/kad"
 	"hahajing/publish"
+	webSearch "hahajing/searcher"
 	"hahajing/web"
 	"os"
 	"os/signal"
@@ -49,6 +50,8 @@ func main() {
 	var downloaders arrayFlags
 	flag.Var(&downloaders, "downloader", "emule:http://password@localhost:4711 or synology:http://user:password@hello.synology.me:5000/downloadpath or amule:tcp://password@localhost:4712 repetable param for multiple downloaders")
 
+	var searchers arrayFlags
+	flag.Var(&searchers, "searcher", "user:password@sharerip.com repetable param for multiple searchers")
 
 
 	flag.StringVar(&config.DownloadPath,"download-path","/downloads","Path where downloads are saved for emule/synology")
@@ -62,36 +65,53 @@ func main() {
 	flag.Parse()
 
 
-	pattern := regexp.MustCompile(`^(emule|synology|amule):(https?|tcp):\/\/(.+)@(.+):([0-9]+)\/?(.*)?$`)
+	downloaderPattern := regexp.MustCompile(`^(emule|synology|amule):(https?|tcp):\/\/(.+)@(.+):([0-9]+)\/?(.*)?$`)
 	multiDownloader := download.MultiDownloader{}
 	for _,downloaderString := range downloaders {
-		if !pattern.MatchString(downloaderString) {
+		if !downloaderPattern.MatchString(downloaderString) {
 			com.HhjLog.Errorf("Invalid downloader format: %s", downloaderString)
 			os.Exit(1)
 		}
 		var downloader download.Downloader
-		switch pattern.FindStringSubmatch(downloaderString)[1]{
+		switch downloaderPattern.FindStringSubmatch(downloaderString)[1]{
 		case "emule":
-			emuleURL := fmt.Sprintf("%s://%s:%s",pattern.FindStringSubmatch(downloaderString)[2],pattern.FindStringSubmatch(downloaderString)[4],pattern.FindStringSubmatch(downloaderString)[5])
-			downloader = download.EmuleDownloader{Password:pattern.FindStringSubmatch(downloaderString)[3], EmuleWebURL:emuleURL}
+			emuleURL := fmt.Sprintf("%s://%s:%s",downloaderPattern.FindStringSubmatch(downloaderString)[2],downloaderPattern.FindStringSubmatch(downloaderString)[4],downloaderPattern.FindStringSubmatch(downloaderString)[5])
+			downloader = download.EmuleDownloader{Password:downloaderPattern.FindStringSubmatch(downloaderString)[3], EmuleWebURL:emuleURL}
 		case "synology":
-			synologyURL := fmt.Sprintf("%s://%s:%s",pattern.FindStringSubmatch(downloaderString)[2],pattern.FindStringSubmatch(downloaderString)[4],pattern.FindStringSubmatch(downloaderString)[5])
-			userPass := strings.Split(pattern.FindStringSubmatch(downloaderString)[3],":")
+			synologyURL := fmt.Sprintf("%s://%s:%s",downloaderPattern.FindStringSubmatch(downloaderString)[2],downloaderPattern.FindStringSubmatch(downloaderString)[4],downloaderPattern.FindStringSubmatch(downloaderString)[5])
+			userPass := strings.Split(downloaderPattern.FindStringSubmatch(downloaderString)[3],":")
 			downloader = download.SynologyMuleDownloader{SynologyPassword:userPass[1],
 				SynologyUser:userPass[0],
 				SynologyURL:synologyURL,
-				SynologyDestionation: pattern.FindStringSubmatch(downloaderString)[6],
+				SynologyDestionation: downloaderPattern.FindStringSubmatch(downloaderString)[6],
 			}
 		case "amule":
-			amulePort, err := strconv.Atoi(pattern.FindStringSubmatch(downloaderString)[5])
+			amulePort, err := strconv.Atoi(downloaderPattern.FindStringSubmatch(downloaderString)[5])
 			if err != nil {
-				com.HhjLog.Errorf("Invalid Amule Port format: %s", pattern.FindStringSubmatch(downloaderString)[5])
+				com.HhjLog.Errorf("Invalid Amule Port format: %s", downloaderPattern.FindStringSubmatch(downloaderString)[5])
 				os.Exit(1)
 			}
-			downloader = download.AmuleDownloader{AmuleHost:pattern.FindStringSubmatch(downloaderString)[4], AmulePort:amulePort,AmulePassword:pattern.FindStringSubmatch(downloaderString)[3],}
+			downloader = download.AmuleDownloader{AmuleHost:downloaderPattern.FindStringSubmatch(downloaderString)[4], AmulePort:amulePort,AmulePassword:downloaderPattern.FindStringSubmatch(downloaderString)[3],}
 		}
 		multiDownloader.DownloaderList = append(multiDownloader.DownloaderList,downloader)
 	}
+
+	searcherPattern := regexp.MustCompile(`^(.+):(.+)@(sharerip\.com)$`)
+	var searcher webSearch.Searcher
+	for _,searchString := range searchers {
+		if !searcherPattern.MatchString(searchString) {
+			com.HhjLog.Errorf("Invalid searcher format: %s", searchString)
+			os.Exit(1)
+		}
+		switch searcherPattern.FindStringSubmatch(searchString)[3]{
+		case "sharerip.com":
+			searcher = webSearch.NewShareRipSearcher(&webSearch.ShareRipSearcher{
+				User:     searcherPattern.FindStringSubmatch(searchString)[1],
+				Password: searcherPattern.FindStringSubmatch(searchString)[2],
+			})
+		}
+	}
+
 	publisher := publish.PublisherSSHConfig{
 		Config:             publish.PublisherConfig{
 			DownloadPath:config.DownloadPath,
@@ -119,7 +139,7 @@ func main() {
 
 	if strings.ToLower(config.EnableSearcher)=="true" {
 		kadInstance.Start(&config)
-		webInstance.Start(kadInstance.SearchReqCh,&config,multiDownloader)
+		webInstance.Start(kadInstance.SearchReqCh,&config,multiDownloader,searcher)
 	}
 
 	if config.PublishSSHPath != "" {

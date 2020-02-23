@@ -14,6 +14,7 @@ import (
 	"hahajing/com"
 	"hahajing/download"
 	"hahajing/kad"
+	"hahajing/searcher"
 	"io"
 	"net/http"
 	"strconv"
@@ -34,14 +35,15 @@ type Web struct {
 	searchReqCh chan *kad.SearchReq
 	config *com.Config
 	downloader download.Downloader
+	searcher searcher.Searcher
 }
 
 // Start x
-func (we *Web) Start(searchReqCh chan *kad.SearchReq,config *com.Config, downloader download.Downloader) {
+func (we *Web) Start(searchReqCh chan *kad.SearchReq,config *com.Config, downloader download.Downloader,searcher searcher.Searcher) {
 	we.searchReqCh = searchReqCh
 	we.config = config
 	we.downloader = downloader
-
+	we.searcher = searcher
 	go we.startServer()
 }
 
@@ -220,17 +222,21 @@ func (we *Web) fakeQBittorrent(w http.ResponseWriter, r *http.Request) {
 }
 
 func (we *Web) searchHandler(w http.ResponseWriter, r *http.Request) {
+	var results []*com.Ed2kFileLinkJSON
 	q:=r.URL.Query().Get("q")
-	myKeyword := we.readSearchInput(q)
-
-	// send to KAD
-    var items []*com.Item
-    item := com.Item{Type: 0x1, OrgName: strings.Join(myKeyword.SearchKeywords, " "), ChName: ""}
-    items = append(items, &item)
-	myKeywordStruct := com.NewMyKeywordStruct(myKeyword, items)
-	com.HhjLog.Infof("New search: %#v", q)
-	results :=we.send2Kad(myKeywordStruct)
-
+	if q!="" {
+		myKeyword := we.readSearchInput(q)
+		var items []*com.Item
+		item := com.Item{Type: 0x1, OrgName: strings.Join(myKeyword.SearchKeywords, " "), ChName: ""}
+		items = append(items, &item)
+		myKeywordStruct := com.NewMyKeywordStruct(myKeyword, items)
+		com.HhjLog.Infof("New search: %#v", q)
+		results =we.send2Kad(myKeywordStruct)
+	}else{
+		//For now we only use searchers for getting latests
+		com.HhjLog.Infof("getting latest updates from searcher")
+		results = we.searcher.Search("")
+	}
 	bytes,_ :=xml.MarshalIndent(results,"","   ")
 	w.Write(bytes)
 }

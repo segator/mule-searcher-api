@@ -3,6 +3,8 @@ package com
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha1"
+	"fmt"
 	"github.com/op/go-logging"
 	"io"
 	"net/http"
@@ -139,4 +141,11 @@ func DownloadFile(url string) (*bytes.Buffer,error) {
 	// Write the body to file
 	io.Copy(buf, resp.Body)
 	return &b,nil
+}
+
+func SHA1String(string string) string {
+	h := sha1.New()
+	h.Write([]byte(string))
+	bs := h.Sum(nil)
+	return fmt.Sprintf("%x",bs)
 }
