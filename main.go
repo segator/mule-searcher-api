@@ -55,6 +55,7 @@ func main() {
 
 
 	flag.StringVar(&config.DownloadPath,"download-path","/downloads","Path where downloads are saved for emule/synology")
+	flag.StringVar(&config.DownloadPathCompleted,"download-path-completed","","When file successfully published move to this directory")
 	flag.StringVar(&config.PublishSSHHost,"publish-ssh-host","localhost","SSH Host to publish new downloads")
 	flag.IntVar(&config.PublishSSHPort,"publish-ssh-port",22,"SSH Port of the publisher ssh host")
 	flag.StringVar(&config.PublishSSHUsername,"publish-ssh-username","root","SSH Username of the publisher ssh host")
@@ -115,6 +116,7 @@ func main() {
 	publisher := publish.PublisherSSHConfig{
 		Config:             publish.PublisherConfig{
 			DownloadPath:config.DownloadPath,
+			DownloadPathCompleted: config.DownloadPathCompleted,
 			ValidUploadableFormats: []string{"mkv","mp4","avi"},
 		},
 		ScanTime: time.Duration(config.PublishScanTime) * time.Minute,
@@ -148,5 +150,4 @@ func main() {
 	fmt.Println("Ctrl+C to stop")
 	<-done
 	fmt.Println("Exiting...")
-
 }

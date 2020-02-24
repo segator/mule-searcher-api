@@ -22,6 +22,7 @@ type Publisher interface {
 
 type PublisherConfig struct {
 	DownloadPath             string
+	DownloadPathCompleted    string
 	ValidUploadableFormats []string
 }
 
@@ -70,6 +71,12 @@ func (p *PublisherSSHConfig) scheduleRoutine() {
 					err := p.uploadFile(uploadableFile)
 					if err !=nil {
 						com.HhjLog.Errorf("An error ocurrend when uploading %s",uploadableFile.path,err)
+					} else if p.Config.DownloadPathCompleted!="" {
+						destinationMovePath := p.Config.DownloadPathCompleted + "/" + uploadableFile.info.Name()
+						err := os.Rename(uploadableFile.path + "/" + uploadableFile.info.Name(), destinationMovePath)
+						if err != nil {
+							com.HhjLog.Errorf("An error ocurrend when moving %s to %s %s",uploadableFile.path, destinationMovePath,err)
+						}
 					}
 
 				}

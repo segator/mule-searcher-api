@@ -105,6 +105,8 @@ func (pp *PacketProcessor) processPacket(pPacket *Packet) {
 		pp.processKademlia2SearchKeyReq(pPacket)
 	case kademlia2Ping:
 		pp.processKademlia2Ping(pPacket)
+	case kademlia2HelloReq:
+		pp.processKademlia2HelloReq(pPacket)
 	case kademlia2Req:
 		//pp.processKademlia2Req(pPacket)
 	case kademliaFirewalled2Req:
@@ -273,6 +275,35 @@ func (pp *PacketProcessor) sendSearchKeyword(pContact *Contact, targetHash []byt
 	}
 
 	pp.sendPacket(kademlia2SearchKeyReq, pContact, bi.getBuf())
+}
+
+func (pp *PacketProcessor) processKademlia2HelloReq(packet *Packet) {
+	bi := ByteIO{buf: packet.buf}
+	kadID := ID{}
+	bi.readBytesFast(kadID.getHash())
+	port := bi.readUint16()
+	version := bi.readUint8()
+
+	println(port)
+
+	bNew, pContact := pp.pContactManager.addContact(
+		&kadID,
+		packet.ip,
+		packet.port,
+		version,
+		&UDPKey{key: packet.senderVerifyKey, ip: packet.ip},
+		false) // It's verified.
+	if pContact == nil {
+		return
+	}
+
+	// It's good place we start node finding, because we have it's details.
+	pp.pContactManager.finder.add(pContact)
+
+	// It's live, just update it. So that we don't need to send hello to it.
+	if !bNew {
+		pp.pContactManager.liver.update(pContact, true)
+	}
 }
 
 

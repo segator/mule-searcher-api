@@ -28,6 +28,7 @@ type Config struct {
 
 	//Publisher parameters
 	DownloadPath             string
+	DownloadPathCompleted    string
 	PublishSSHHost           string
 	PublishSSHUsername       string
 	PublishSSHPassword       string

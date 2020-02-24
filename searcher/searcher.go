@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"github.com/gocolly/colly/v2"
 	"hahajing/com"
+	"log"
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type Searcher interface {
@@ -23,13 +25,12 @@ type ShareRipSearcher struct {
 }
 func NewShareRipSearcher(shareRipSearcher *ShareRipSearcher) *ShareRipSearcher {
 	shareRipSearcher.url = "https://www.sharerip.com/forum/"
-	shareRipSearcher.collyCollector = *colly.NewCollector()
-	/*shareRipSearcher.collyCollector.Limit(&colly.LimitRule{
-		DomainGlob:   "https://www.sharerip.com/*",
+	shareRipSearcher.collyCollector = *colly.NewCollector(colly.Async(true),)
+	shareRipSearcher.collyCollector.Limit(&colly.LimitRule{
 		Delay:        100 * time.Millisecond,
 		//RandomDelay:  100 * time.Second,
 		Parallelism:  30,
-	})*/
+	})
 	shareRipSearcher.collyCollector.AllowURLRevisit=true
 	shareRipSearcher.collyCollector.OnHTML("a", func(e *colly.HTMLElement) {
 		//shareRipSearcher.collyCollector.AllowURLRevisit=false
@@ -59,9 +60,12 @@ func NewShareRipSearcher(shareRipSearcher *ShareRipSearcher) *ShareRipSearcher {
 			}
 			shareRipSearcher.results = append(shareRipSearcher.results,&e2dkFile)
 		}
-		/*else if strings.HasPrefix(e.Attr("href"),"https://www.sharerip.com") || !strings.ContainsAny(e.Attr("href"),"logout")  {
-			shareRipSearcher.collyCollector.Visit(e.Attr("href"))
-		}*/
+		//else if strings.HasPrefix(e.Attr("href"),"https://www.sharerip.com") && !strings.Contains(e.Attr("href"),"logout")   {
+		//	match,_ := regexp.MatchString(".*/forum/index.php\\?(action=forum|board|topic).*", e.Attr("href"))
+		//	if match {
+		//			shareRipSearcher.collyCollector.Visit(e.Attr("href"))
+		//	}
+		//}
 	})
 
 	shareRipSearcher.collyCollector.OnHTML("form#frmLogin", func(e *colly.HTMLElement) {
@@ -83,18 +87,16 @@ func NewShareRipSearcher(shareRipSearcher *ShareRipSearcher) *ShareRipSearcher {
 			com.HhjLog.Error("Error on login on sharerip: ", err)
 		}
 	})
-	// attach callbacks after login
-	/*shareRipSearcher.collyCollector.OnResponse(func(r *colly.Response) {
-		log.Println("response received", r.StatusCode)
-	})
+
 	shareRipSearcher.collyCollector.OnRequest(func(r *colly.Request) {
 		log.Println("request", r.URL)
-	})*/
+	})
 	return shareRipSearcher
 }
 
 func (srs *ShareRipSearcher) Search(q string) []*com.Ed2kFileLinkJSON {
 	srs.results = nil
 	srs.collyCollector.Visit(srs.url)
+	srs.collyCollector.Wait()
 	return srs.results
 }
