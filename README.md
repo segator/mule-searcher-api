@@ -28,20 +28,44 @@ Can be done using the binary or the docker image
 
 ### Command Line
 ```bash
-  -NumberOfUDPSockets int
+    -NumberOfUDPSockets int
     	Number of UDP Sockets (default 10)
   -contacts int
     	Max number of contacts (default 5000)
-  -emule-password string
-    	admin (default "admin")
-  -emule-url string
-    	Emule URL (default "http://localhost:4711")
+  -download-path string
+    	Path where downloads are saved for emule/synology (default "/downloads")
+  -download-path-completed string
+    	When file successfully published move to this directory
+  -downloader value
+    	emule:http://password@localhost:4711 or synology:http://user:password@hello.synology.me:5000/downloadpath or amule:tcp://password@localhost:4712 repetable param for multiple downloaders
+  -http-password string
+    	http auth password (default "admin")
+  -http-user string
+    	http auth user (default "admin")
   -nodesdat-path string
     	nodes.dat path can be http:// or file:// (default "http://upd.emule-security.org/nodes.dat")
   -public-udp-listen-port int
     	Public UDP Listen Port (default 2500)
+  -publish-minimum-push-time int
+    	minimum life time of a file to be selected as publishable in minutes (default 60)
+  -publish-scan-time int
+    	Scan Download folder every x minutes (default 60)
+  -publish-ssh-host string
+    	SSH Host to publish new downloads (default "localhost")
+  -publish-ssh-password string
+    	SSH Password of the publisher ssh host
+  -publish-ssh-path string
+    	SSH Path of the publisher ssh host
+  -publish-ssh-port int
+    	SSH Port of the publisher ssh host (default 22)
+  -publish-ssh-username string
+    	SSH Username of the publisher ssh host (default "root")
   -search-cache-timeout int
     	Time to cache searches (default 60)
+  -search-enable string
+    	Enable searcher? by default true (default "true")
+  -searcher value
+    	user:password@sharerip.com repetable param for multiple searchers
   -tcp-listen-port int
     	TCP Listen Port (default 2501)
   -timeout-noresults int
