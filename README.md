@@ -28,7 +28,7 @@ Can be done using the binary or the docker image
 
 ### Command Line
 ```bash
-    -NumberOfUDPSockets int
+  -NumberOfUDPSockets int
     	Number of UDP Sockets (default 10)
   -contacts int
     	Max number of contacts (default 5000)
