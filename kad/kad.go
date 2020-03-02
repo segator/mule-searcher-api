@@ -59,7 +59,6 @@ func (k *Kad) scheduleRoutine() {
 		case pPacket := <-k.recvCh:
 			k.packetProcesser.processPacket(pPacket)
 		case <-tick.C:
-			//com.HhjLog.Infof("Contacts: %d\n", len(k.contactManager.contactMap))
 			k.contactManager.tickProcess()
 			k.searchManager.tickProcess()
 		case <-packetReqGuardTimer.C:

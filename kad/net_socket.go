@@ -62,7 +62,6 @@ func (s *Socket) recv() {
 	buf := make([]byte, 5000)
 	n, remoteAddr, err := s.conn.ReadFromUDP(buf)
 	if err != nil {
-		//com.HhjLog.Warningf("Socket: Read from UDP error: %s\n", err)
 		return
 	}
 
@@ -71,7 +70,7 @@ func (s *Socket) recv() {
 
 	buf, nReceiverVerifyKey, nSenderVerifyKey, bEncrypt := s.decrypt(buf[:n], remoteIP)
 	if buf == nil {
-		//com.HhjLog.Warningf("Socket: Decrypt received packet from %s:%d failed\n", iIP2Str(remoteIP), remotePort)
+		com.HhjLog.Debugf("Socket: Decrypt received packet from %s:%d failed\n", iIP2Str(remoteIP), remotePort)
 		return
 	}
 

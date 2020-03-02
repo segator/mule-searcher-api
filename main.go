@@ -63,9 +63,23 @@ func main() {
 	flag.StringVar(&config.PublishSSHPath,"publish-ssh-path","","SSH Path of the publisher ssh host")
 	flag.IntVar(&config.PublishScanTime,"publish-scan-time",60,"Scan Download folder every x minutes")
 	flag.IntVar(&config.PublishMinimumTime,"publish-minimum-push-time",60,"minimum life time of a file to be selected as publishable in minutes")
+
+	flag.StringVar(&config.Verbosity,"verbosity","INFO","verbosity (CRITICAL,WARNING,NOTICE,INFO,DEBUG)")
+
 	flag.Parse()
 
-
+	err := com.LoggerInit(config.Verbosity)
+	if err!=nil {
+		com.HhjLog.Errorf("Invalid logger module: %s", config.Verbosity)
+		os.Exit(1)
+	}
+	/*"CRITICAL",
+		"ERROR",
+		"WARNING",
+		"NOTICE",
+		"INFO",
+		"DEBUG",
+*/
 	downloaderPattern := regexp.MustCompile(`^(emule|synology|amule):(https?|tcp):\/\/(.+)@(.+):([0-9]+)\/?(.*)?$`)
 	multiDownloader := download.MultiDownloader{}
 	for _,downloaderString := range downloaders {

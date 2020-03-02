@@ -62,7 +62,7 @@ func (sm *SearchManager) newSearch(pSearchReq *SearchReq) {
 			pSearch := searches[0]
 			// send matched files to user for each search
 			fileLinks := search.convert2FileLinks(pSearch.files)
-			//com.HhjLog.Infof("Cached Search Found: %d Filtered:%d", len(pSearch.files),len(fileLinks))
+			com.HhjLog.Debugf("Cached Search Found: %d Filtered:%d", len(pSearch.files),len(fileLinks))
 			if fileLinks != nil {
 				if len(pSearch.resCh) < cap(pSearch.resCh) {
 					searchRes := SearchRes{FileLinks: fileLinks, Cached:true}

@@ -1,6 +1,7 @@
 package kad
 
 import (
+	"hahajing/com"
 	"time"
 )
 
@@ -74,7 +75,7 @@ func (cl *ContactLiver) tickProcess(t int64) []*Contact {
 		contacts := cl.contactMap[cl.curTime]
 		for _, pContact := range contacts {
 			if t >= pContact.tDead { // now it's dead
-				//com.HhjLog.Noticef("Contact %s:%d is dead\n", iIP2Str(pContact.ip), pContact.updPort)
+				com.HhjLog.Debugf("Contact %s:%d is dead\n", iIP2Str(pContact.ip), pContact.updPort)
 				deadContacts = append(deadContacts, pContact)
 				continue
 			}

@@ -36,24 +36,31 @@ type Config struct {
 	PublishSSHPort           int
 	PublishScanTime          int
 	PublishMinimumTime       int
+	Verbosity                string
+
 }
 
 
 // HhjLog is HHJ system log
 var HhjLog = logging.MustGetLogger("hhj")
 var logformat = logging.MustStringFormatter(
-	`%{color}%{time:2006-01-02 15:04:05.000} ▶ %{level:.4s} %{id:03x}%{color:reset} %{message}`,
+	`%{color}%{time:2006-01-02 15:04:05.000} ▶ %{level:.4s} %{color:reset} %{message}`,
 )
 
-func init() {
+func LoggerInit(module string) error {
 	backend := logging.NewLogBackend(os.Stdout, "", 0)
 	backendFormatter := logging.NewBackendFormatter(backend, logformat)
 
-	backendLeveled := logging.AddModuleLevel(backend)
-	backendLeveled.SetLevel(logging.CRITICAL, "")
+	backendLeveled := logging.AddModuleLevel(backendFormatter)
+	level,err := logging.LogLevel(module)
+	if err!=nil {
+		return err
+	}
+	backendLeveled.SetLevel(level,"")
 
 	// Set the backends to be used.
-	logging.SetBackend(backendLeveled, backendFormatter)
+	logging.SetBackend(backendLeveled)
+	return nil
 }
 
 // GetConfigPath x

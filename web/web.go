@@ -86,7 +86,7 @@ func (we *Web) send2Kad(myKeywordStruct *com.MyKeywordStruct) []*com.Ed2kFileLin
 					}
 				}
 				if contains {
-					//com.HhjLog.Infof("Elements found %d", len(pSearchRes.FileLinks))
+					com.HhjLog.Debugf("Elements found %d", len(pSearchRes.FileLinks))
 					results = append(results,fileLink.ToJSON())
 				}else{
 					com.HhjLog.Infof("Not filtered %s",fileLink.Name)

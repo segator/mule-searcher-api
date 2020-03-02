@@ -245,7 +245,5 @@ func (cm *ContactManager) tickProcess() {
 	// we still need find more nodes
 	if len(cm.contactMap) < cm.config.MaxContacts {
 		cm.finder.tickProcess()
-	} else {
-		//com.HhjLog.Infof("Reach limit of contacts!")
 	}
 }
