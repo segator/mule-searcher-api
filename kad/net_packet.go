@@ -90,7 +90,7 @@ func (pPacket *Packet) setBuf(buf []byte) bool {
 		buf[1] != kademlia2Ping &&
 		buf[1] != kademlia2SearchKeyReq &&
 		buf[1] != kademliaFirewalled2Req {
-		println("rejected packet:" + getOpcodeStr(buf[1]));
+		//println("rejected packet:" + getOpcodeStr(buf[1]));
 		return false
 	}
 

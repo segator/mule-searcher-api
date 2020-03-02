@@ -230,7 +230,6 @@ func (we *Web) searchHandler(w http.ResponseWriter, r *http.Request) {
 		item := com.Item{Type: 0x1, OrgName: strings.Join(myKeyword.SearchKeywords, " "), ChName: ""}
 		items = append(items, &item)
 		myKeywordStruct := com.NewMyKeywordStruct(myKeyword, items)
-		com.HhjLog.Infof("New search: %#v", q)
 		results =we.send2Kad(myKeywordStruct)
 	}else{
 		//For now we only use searchers for getting latests

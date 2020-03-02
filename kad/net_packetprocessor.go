@@ -281,10 +281,10 @@ func (pp *PacketProcessor) processKademlia2HelloReq(packet *Packet) {
 	bi := ByteIO{buf: packet.buf}
 	kadID := ID{}
 	bi.readBytesFast(kadID.getHash())
-	port := bi.readUint16()
+	bi.readUint16() //port
 	version := bi.readUint8()
 
-	println(port)
+
 
 	bNew, pContact := pp.pContactManager.addContact(
 		&kadID,
