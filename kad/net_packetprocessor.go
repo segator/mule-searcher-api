@@ -135,7 +135,7 @@ func (pp *PacketProcessor) processKademlia2Req(packet *Packet) {
 	buf := ByteIO{buf: make([]byte, 817)}
 	buf.writeBytes(targetHash)
 	buf.writeUint8(uint8(len(tosend)))
-	com.HhjLog.Infof("Search %d userID %s check %s found: %d",typeSearch,strings.ToUpper(hex.EncodeToString(targetHash[:])),hex.EncodeToString(check[:]),len(tosend))
+	com.HhjLog.Debugf("Search %d userID %s check %s found: %d",typeSearch,strings.ToUpper(hex.EncodeToString(targetHash[:])),hex.EncodeToString(check[:]),len(tosend))
 	for _,pContact := range tosend {
 		buf.writeBytes(pContact.getKadID().hash[:])
 		buf.writeUint32(pContact.getIP())
