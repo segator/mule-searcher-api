@@ -102,7 +102,7 @@ func (pp *PacketProcessor) processPacket(pPacket *Packet) {
 	case kademlia2SearchRes:
 		pp.processKademlia2SearchRes(pPacket)
 	case kademlia2SearchKeyReq:
-		pp.processKademlia2SearchKeyReq(pPacket)
+		//pp.processKademlia2SearchKeyReq(pPacket)
 	case kademlia2Ping:
 		pp.processKademlia2Ping(pPacket)
 	case kademlia2HelloReq:
