@@ -224,10 +224,21 @@ func (we *Web) fakeQBittorrent(w http.ResponseWriter, r *http.Request) {
 func (we *Web) searchHandler(w http.ResponseWriter, r *http.Request) {
 	var results []*com.Ed2kFileLinkJSON
 	q:=r.URL.Query().Get("q")
+	t:=r.URL.Query().Get("t")
+	var typeSearch byte
+	switch t {
+		case "tvshow":
+			typeSearch = 0x01
+		case "movie":
+			typeSearch = 0x00
+		default:
+			typeSearch = 0x01
+	}
+
 	if q!="" {
 		myKeyword := we.readSearchInput(q)
 		var items []*com.Item
-		item := com.Item{Type: 0x1, OrgName: strings.Join(myKeyword.SearchKeywords, " "), ChName: ""}
+		item := com.Item{Type: typeSearch, OrgName: strings.Join(myKeyword.SearchKeywords, " "), ChName: ""}
 		items = append(items, &item)
 		myKeywordStruct := com.NewMyKeywordStruct(myKeyword, items)
 		results =we.send2Kad(myKeywordStruct)
