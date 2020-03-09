@@ -168,7 +168,7 @@ func main() {
 		webInstance.Start(kadInstance.SearchReqCh,&config,multiDownloader,searcher)
 	}
 
-	if config.PublishSSHPath != "" {
+	if config.PublishSSHPathMovies!="" && config.PublishSSHPathTV!="" {
 		publisher.Start()
 	}
 	fmt.Println("Ctrl+C to stop")
