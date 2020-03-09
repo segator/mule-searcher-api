@@ -32,7 +32,8 @@ type PublisherSSHConfig struct {
 	PublishSSHHost           string
 	PublishSSHUsername		 string
 	PublishSSHPassword       string
-	PublishSSHPath           string
+	PublishSSHPathTV         string
+	PublishSSHPathMovies     string
 	PublishSSHPort           int
 	PublishMinimumTime       time.Duration
 	sshClientConfig          ssh.ClientConfig
@@ -70,7 +71,7 @@ func (p *PublisherSSHConfig) scheduleRoutine() {
 				for _,uploadableFile := range uploadableFiles {
 					err := p.uploadFile(uploadableFile)
 					if err !=nil {
-						com.HhjLog.Errorf("An error ocurrend when uploading %s",uploadableFile.path,err)
+						com.HhjLog.Errorf("An error ocurrend when uploading %s %s",uploadableFile.path,err)
 					} else if p.Config.DownloadPathCompleted!="" {
 						destinationMovePath := p.Config.DownloadPathCompleted + "/" + uploadableFile.info.Name()
 						err := os.Rename(uploadableFile.path + "/" + uploadableFile.info.Name(), destinationMovePath)
@@ -86,6 +87,17 @@ func (p *PublisherSSHConfig) scheduleRoutine() {
 }
 
 func (p *PublisherSSHConfig) uploadFile(sourceFile FileInfo) error {
+	_,_,videoType := com.ParseUnknownTypeName(sourceFile.info.Name(),".*")
+	var sshPath string
+	switch videoType {
+		case com.Movie:
+			sshPath = p.PublishSSHPathMovies
+		case com.SeasonTV:
+			sshPath = p.PublishSSHPathTV
+		case com.NoSeasonTV:
+			sshPath = p.PublishSSHPathTV
+	}
+
 	conn, err := ssh.Dial("tcp", p.PublishSSHHost+":"+strconv.Itoa(p.PublishSSHPort), &p.sshClientConfig)
 	if err != nil {
 		return err
@@ -99,7 +111,7 @@ func (p *PublisherSSHConfig) uploadFile(sourceFile FileInfo) error {
 		return err
 	}
 	defer client.Close()
-	destFileString := p.PublishSSHPath+"/"+sourceFile.info.Name()
+	destFileString := sshPath+"/"+sourceFile.info.Name()
 	destFileStat,_ := client.Stat(destFileString)
 
 	if destFileStat == nil || destFileStat.Size() != sourceFileStat.Size() {
@@ -108,7 +120,7 @@ func (p *PublisherSSHConfig) uploadFile(sourceFile FileInfo) error {
 			return err
 		}
 		defer dstFile.Close()
-		com.HhjLog.Infof("Uploading name:%s/%s size: %dMB ---> %s:%d/%s",sourceFile.path,sourceFile.info.Name(),sourceFileStat.Size()/1048576,p.PublishSSHHost,p.PublishSSHPort,p.PublishSSHPath)
+		com.HhjLog.Infof("Uploading name:%s/%s size: %dMB ---> %s:%d/%s",sourceFile.path,sourceFile.info.Name(),sourceFileStat.Size()/1048576,p.PublishSSHHost,p.PublishSSHPort,sshPath)
 		bytes, err := io.Copy(dstFile, f)
 		if err != nil {
 			return err

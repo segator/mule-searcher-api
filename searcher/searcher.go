@@ -13,7 +13,7 @@ import (
 )
 
 type Searcher interface {
-	Search(q string) []*com.Ed2kFileLinkJSON
+	Search(q string,typeSearch byte) []*com.Ed2kFileLinkJSON
 }
 
 type ShareRipSearcher struct {
@@ -41,18 +41,19 @@ func NewShareRipSearcher(shareRipSearcher *ShareRipSearcher) *ShareRipSearcher {
 			hash:=e2dkSplited[4]
 			link := fmt.Sprintf("%s|%d|%s" ,name,size,hash)
 			bytes:=[]byte(link)
+			season,episode,videoType := com.ParseUnknownTypeName(name,".*")
 			downloadLink :="/download?file="+base64.URLEncoding.EncodeToString(bytes)
 			e2dkFile := com.Ed2kFileLinkJSON{
 				FileInfo:     com.FileInfo{
-					Type:    1,
+					Type:    videoType,
 					OrgName: "latest",
 					ChName:  "",
-					Season:  0,
-					Episode: 0,
+					Season:  season,
+					Episode: episode,
 				},
 				Name:         name,
-				Season:       0,
-				Episode:      0,
+				Season:       season,
+				Episode:      episode,
 				Size:         uint64(size),
 				Avail:        10,
 				Link:         e.Attr("href"),
@@ -94,9 +95,15 @@ func NewShareRipSearcher(shareRipSearcher *ShareRipSearcher) *ShareRipSearcher {
 	return shareRipSearcher
 }
 
-func (srs *ShareRipSearcher) Search(q string) []*com.Ed2kFileLinkJSON {
+func (srs *ShareRipSearcher) Search(q string,typeSearch byte) []*com.Ed2kFileLinkJSON {
+	var results []*com.Ed2kFileLinkJSON
 	srs.results = nil
 	srs.collyCollector.Visit(srs.url)
 	srs.collyCollector.Wait()
-	return srs.results
+	for _,item := range srs.results {
+		if item.FileInfo.Type == typeSearch || typeSearch == com.UnknownType {
+			results = append(results,item)
+		}
+	}
+	return results
 }

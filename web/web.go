@@ -228,11 +228,11 @@ func (we *Web) searchHandler(w http.ResponseWriter, r *http.Request) {
 	var typeSearch byte
 	switch t {
 		case "tvshow":
-			typeSearch = 0x01
+			typeSearch = com.SeasonTV
 		case "movie":
-			typeSearch = 0x00
+			typeSearch = com.Movie
 		default:
-			typeSearch = 0x01
+			typeSearch = com.UnknownType
 	}
 
 	if q!="" {
@@ -245,7 +245,7 @@ func (we *Web) searchHandler(w http.ResponseWriter, r *http.Request) {
 	}else{
 		//For now we only use searchers for getting latests
 		com.HhjLog.Infof("getting latest updates from searcher")
-		results = we.searcher.Search("")
+		results = we.searcher.Search("",typeSearch)
 	}
 	bytes,_ :=xml.MarshalIndent(results,"","   ")
 	w.Write(bytes)

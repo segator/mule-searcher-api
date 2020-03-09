@@ -60,13 +60,22 @@ func main() {
 	flag.IntVar(&config.PublishSSHPort,"publish-ssh-port",22,"SSH Port of the publisher ssh host")
 	flag.StringVar(&config.PublishSSHUsername,"publish-ssh-username","root","SSH Username of the publisher ssh host")
 	flag.StringVar(&config.PublishSSHPassword,"publish-ssh-password","","SSH Password of the publisher ssh host")
-	flag.StringVar(&config.PublishSSHPath,"publish-ssh-path","","SSH Path of the publisher ssh host")
+	flag.StringVar(&config.PublishSSHPath,"publish-ssh-path","","SSH Path of the publisher ssh host for tv shows")
+	flag.StringVar(&config.PublishSSHPathTV,"publish-ssh-path-tv","","SSH Path of the publisher ssh host for tv shows")
+	flag.StringVar(&config.PublishSSHPathMovies,"publish-ssh-path-movies","","SSH Path of the publisher ssh host for movies")
 	flag.IntVar(&config.PublishScanTime,"publish-scan-time",60,"Scan Download folder every x minutes")
 	flag.IntVar(&config.PublishMinimumTime,"publish-minimum-push-time",60,"minimum life time of a file to be selected as publishable in minutes")
 
 	flag.StringVar(&config.Verbosity,"verbosity","INFO","verbosity (CRITICAL,WARNING,NOTICE,INFO,DEBUG)")
-
 	flag.Parse()
+	if config.PublishSSHPath!=""{
+		if config.PublishSSHPathTV=="" {
+			config.PublishSSHPathTV = config.PublishSSHPath
+		}
+		if config.PublishSSHPathMovies=="" {
+			config.PublishSSHPathMovies = config.PublishSSHPath
+		}
+	}
 
 	err := com.LoggerInit(config.Verbosity)
 	if err!=nil {
@@ -137,7 +146,8 @@ func main() {
 		PublishSSHHost:     config.PublishSSHHost,
 		PublishSSHUsername:  config.PublishSSHUsername,
 		PublishSSHPassword: config.PublishSSHPassword,
-		PublishSSHPath:     config.PublishSSHPath,
+		PublishSSHPathTV:     config.PublishSSHPathTV,
+		PublishSSHPathMovies:     config.PublishSSHPathMovies,
 		PublishSSHPort:     config.PublishSSHPort,
 		PublishMinimumTime: time.Duration(config.PublishMinimumTime) * time.Minute,
 	}

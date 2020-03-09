@@ -33,6 +33,8 @@ type Config struct {
 	PublishSSHUsername       string
 	PublishSSHPassword       string
 	PublishSSHPath           string
+	PublishSSHPathTV         string
+	PublishSSHPathMovies     string
 	PublishSSHPort           int
 	PublishScanTime          int
 	PublishMinimumTime       int
@@ -86,7 +88,7 @@ func GetConfigPath() string {
 // And keyword containing specific char not thinking as primary keyword.
 func Split2PrimaryKeywords(s string) []string {
 	ignore := "'’"
-	keys := innerSplit2Keywords(s, ignore)
+	keys := InnerSplit2Keywords(s, ignore)
 
 	var newKeys []string
 	for _, key := range keys {
@@ -108,12 +110,12 @@ func Split2PrimaryKeywords(s string) []string {
 
 // Split2Keywords is split to slice of keyword by seperators.
 func Split2Keywords(s string) []string {
-	return innerSplit2Keywords(s, "")
+	return InnerSplit2Keywords(s, "")
 }
 
 // innerSplit2Keywords is split to slice of keyword by seperators.
 // @ignore: which chars not think as seperator.
-func innerSplit2Keywords(s string, ignore string) []string {
+func InnerSplit2Keywords(s string, ignore string) []string {
 	sep := `·!/\*?<>|-_:,.;'"()[]‘’“”；、：，。？！` + "\t"
 	for _, c := range ignore {
 		sep = strings.Replace(sep, string(c), "", -1)

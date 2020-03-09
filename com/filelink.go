@@ -53,7 +53,9 @@ func parseName(name string, orgName string) bool {
 	// check if containing orginal name
 	keywords := Split2Keywords(orgName)
 	pattern := strings.Join(keywords, ".*")
+	//hola := strings.Contains(name,"black-ish")
 	match, _ := regexp.MatchString(pattern, name)
+	//regexp.MatchString(pattern, name)
 
 	return match
 }
@@ -82,7 +84,7 @@ func parseNoSeasonTVName(name string, orgName string) int {
 
 // @name: lower case
 // @orgName: lower case
-func parseUnknownTypeName(name string, orgName string) (int, int, byte) {
+func ParseUnknownTypeName(name string, orgName string) (int, int, byte) {
 	match := parseName(name, orgName)
 	if !match {
 		return -1, -1, UnknownType
@@ -92,12 +94,12 @@ func parseUnknownTypeName(name string, orgName string) (int, int, byte) {
 	if season != -1 && episode != -1 {
 		return season, episode, SeasonTV
 	}
-
+/*
 	episode = getEpisode(name)
 	if episode != -1 {
 		return -1, episode, NoSeasonTV
 	}
-
+*/
 	// movie
 	return -1, -1, Movie
 }
@@ -237,6 +239,7 @@ func ToFileInfo(name string, items []*Item) *FileInfo {
 		orgName := strings.ToLower(item.OrgName)
 
 		switch item.Type {
+		//buscar
 		case SeasonTV:
 			season, episode := parseSeasonTVName(lowerName, orgName)
 			if season != -1 && episode != -1 {
@@ -259,7 +262,7 @@ func ToFileInfo(name string, items []*Item) *FileInfo {
 					Episode: -1}
 			}
 		default:
-			season, episode, itemType := parseUnknownTypeName(lowerName, orgName)
+			season, episode, itemType := ParseUnknownTypeName(lowerName, orgName)
 			if itemType != UnknownType {
 				// Note that we don't set type of item because item type cannot be inferred by movie/tv name.
 				fileInfo = &FileInfo{Type: itemType, OrgName: item.OrgName, ChName: item.ChName,
