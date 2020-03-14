@@ -37,6 +37,16 @@ type Web struct {
 	downloader download.Downloader
 	searcher searcher.Searcher
 }
+type qBittorrentPreferences struct{
+	SavePath string `json:"save_path"`
+	MaxRatioEnabled bool `json:"max_ratio_enabled"`
+	MaxRatio float32 `json:"max_ratio"`
+	MaxSeedingTimeEnabled bool `json:"max_seeding_time_enabled"`
+	MaxSeedingTime int32 `json:"max_seeding_time"`
+	MaxRatioACT bool `json:"max_ratio_act"`
+	QueueingEnabled bool `json:"queueing_enabled"`
+	Dht bool `json:"dht"`
+}
 
 // Start x
 func (we *Web) Start(searchReqCh chan *kad.SearchReq,config *com.Config, downloader download.Downloader,searcher searcher.Searcher) {
@@ -180,10 +190,25 @@ func (we *Web) fakeQBittorrent(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte("Unauthorised.\n"))
 			return
 		}
-	}else if strings.Contains(r.URL.RequestURI(),"webapiVersion"){
+	}else if strings.Contains(r.URL.RequestURI(),"webapiVersion") {
 		w.WriteHeader(200)
-		w.Header().Add("Content-Length","3")
+		w.Header().Add("Content-Length", "3")
 		w.Write([]byte("2.4"))
+	}else if strings.Contains(r.URL.RequestURI(),"app/preferences") {
+		w.WriteHeader(200)
+		preferences := &qBittorrentPreferences{
+			SavePath:              we.config.DownloadPath,
+			MaxRatioEnabled:       false,
+			MaxRatio:              0,
+			MaxSeedingTimeEnabled: false,
+			MaxSeedingTime:        0,
+			MaxRatioACT:           false,
+			QueueingEnabled:       false,
+			Dht:                   false,
+		}
+		bytes,_ :=json.MarshalIndent(preferences,"","   ")
+		w.Header().Add("Content-Length",strconv.Itoa(len(bytes)))
+		w.Write(bytes)
 	}else if strings.Contains(r.URL.RequestURI(),"torrents/add"){
 		//r.MultipartForm.File
 		token:=r.URL.Query().Get("token")
@@ -218,6 +243,8 @@ func (we *Web) fakeQBittorrent(w http.ResponseWriter, r *http.Request) {
 		}else{
 			w.WriteHeader(403)
 		}
+	}else{
+		fmt.Println(r.URL.RequestURI())
 	}
 }
 
