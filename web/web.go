@@ -16,6 +16,7 @@ import (
 	"hahajing/kad"
 	"hahajing/searcher"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
@@ -34,7 +35,8 @@ type webError struct {
 type Web struct {
 	searchReqCh chan *kad.SearchReq
 	config *com.Config
-	downloader download.Downloader
+	e2dkDownloader download.E2DKDownloader
+	torrentDownloader download.TorrentDownloader
 	searcher searcher.Searcher
 }
 type qBittorrentPreferences struct{
@@ -49,10 +51,11 @@ type qBittorrentPreferences struct{
 }
 
 // Start x
-func (we *Web) Start(searchReqCh chan *kad.SearchReq,config *com.Config, downloader download.Downloader,searcher searcher.Searcher) {
+func (we *Web) Start(searchReqCh chan *kad.SearchReq,config *com.Config, e2dkDownloader download.E2DKDownloader,torrentDownloader download.TorrentDownloader,searcher searcher.Searcher) {
 	we.searchReqCh = searchReqCh
 	we.config = config
-	we.downloader = downloader
+	we.e2dkDownloader = e2dkDownloader
+	we.torrentDownloader = torrentDownloader
 	we.searcher = searcher
 	go we.startServer()
 }
@@ -220,11 +223,25 @@ func (we *Web) fakeQBittorrent(w http.ResponseWriter, r *http.Request) {
 				//buf := new(bytes.Buffer)
 				//buf.ReadFrom(file)
 
-				metaInfoFile, err := metainfo.Load(file)
+				buf, _ := ioutil.ReadAll(file)
+				buf1 := bytes.NewBuffer(buf)
+				buf2 := bytes.NewBuffer(buf)
+				metaInfoFile, err := metainfo.Load(buf1)
 				if err == nil {
-					com.HhjLog.Infof("Downloading: %s",metaInfoFile.Announce)
-					if !we.downloader.Download(metaInfoFile.Announce) {
-						err = errors.New("Failed to download" + metaInfoFile.Announce)
+					info,err := metaInfoFile.UnmarshalInfo()
+
+					if err == nil {
+						var downloadResult bool
+						com.HhjLog.Infof("Downloading: %s",info.Name)
+						if strings.HasPrefix(metaInfoFile.Announce,"ed2k://"){
+							downloadResult = we.e2dkDownloader.DownloadE2DK(metaInfoFile.Announce)
+						}else{
+							bytes, _ := ioutil.ReadAll(buf2)
+							downloadResult = we.torrentDownloader.DownloadTorrent(info.Name,bytes)
+						}
+						if !downloadResult {
+							err = errors.New("Failed to download" + info.Name)
+						}
 					}
 				}
 				if err == nil {

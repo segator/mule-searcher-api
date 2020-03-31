@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"hahajing/com"
 	"math/rand"
+	"mime/multipart"
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
@@ -17,12 +19,17 @@ import (
 	"strings"
 )
 
-type Downloader interface {
-	Download(e2dk string) bool
+type E2DKDownloader interface {
+	DownloadE2DK(e2dk string) bool
+
+}
+type TorrentDownloader interface {
+	DownloadTorrent(fileName string,torrentData []byte) bool
 }
 
 type MultiDownloader struct {
-	DownloaderList []Downloader
+	DownloaderE2dkList [] E2DKDownloader
+	DownloaderTorrentList [] TorrentDownloader
 }
 
 type EmuleDownloader struct {
@@ -53,12 +60,12 @@ func parseParams(url *url.URL,params map[string]string)  {
 	}
 	url.RawQuery = strings.Replace(query.Encode(), "+", "%20", -1)
 }
-func (md MultiDownloader) Download(e2dk string) bool {
+func (md MultiDownloader) DownloadTorrent(fileName string,torrentData []byte) bool {
 	var failedDownloaders []int
 	downloadSuccess:=false
 	fail := false
 
-	for randomNumber := 0; !downloadSuccess && !fail; randomNumber = rand.Intn(len(md.DownloaderList)) {
+	for randomNumber := 0; !downloadSuccess && !fail; randomNumber = rand.Intn(len(md.DownloaderTorrentList)) {
 		alreadyFailed := false
 		for _, failedIndex := range failedDownloaders{
 			if failedIndex==randomNumber {
@@ -69,10 +76,36 @@ func (md MultiDownloader) Download(e2dk string) bool {
 		if alreadyFailed{
 			continue
 		}
-		downloadSuccess = md.DownloaderList[randomNumber].Download(e2dk)
+		downloadSuccess = md.DownloaderTorrentList[randomNumber].DownloadTorrent(fileName,torrentData)
 		if !downloadSuccess{
 			failedDownloaders = append(failedDownloaders,randomNumber)
-			if len(failedDownloaders) == len(md.DownloaderList) {
+			if len(failedDownloaders) == len(md.DownloaderTorrentList) {
+				fail=true
+			}
+		}
+	}
+	return downloadSuccess
+}
+func (md MultiDownloader) DownloadE2DK(e2dk string) bool {
+	var failedDownloaders []int
+	downloadSuccess:=false
+	fail := false
+
+	for randomNumber := 0; !downloadSuccess && !fail; randomNumber = rand.Intn(len(md.DownloaderE2dkList)) {
+		alreadyFailed := false
+		for _, failedIndex := range failedDownloaders{
+			if failedIndex==randomNumber {
+				alreadyFailed=true
+				continue
+			}
+		}
+		if alreadyFailed{
+			continue
+		}
+		downloadSuccess = md.DownloaderE2dkList[randomNumber].DownloadE2DK(e2dk)
+		if !downloadSuccess{
+			failedDownloaders = append(failedDownloaders,randomNumber)
+			if len(failedDownloaders) == len(md.DownloaderE2dkList) {
 				fail=true
 			}
 		}
@@ -80,7 +113,7 @@ func (md MultiDownloader) Download(e2dk string) bool {
 	return downloadSuccess
 }
 
-func (ad AmuleDownloader) Download(e2dk string) bool {
+func (ad AmuleDownloader) DownloadE2DK(e2dk string) bool {
 	var outbuf, errbuf bytes.Buffer
 	binary, err := exec.LookPath("amulecmd")
 	if err != nil {
@@ -111,12 +144,7 @@ func (ad AmuleDownloader) Download(e2dk string) bool {
 	return true
 }
 
-func (ed SynologyMuleDownloader) Download(e2dk string) bool {
-	cookieJar, _ := cookiejar.New(nil)
-	httpClient := &http.Client{
-		Jar: cookieJar,
-	}
-	//First login
+func (ed SynologyMuleDownloader) Login(httpClient *http.Client) (string,bool) {
 	url,_ := url.Parse(ed.SynologyURL + "/webapi/auth.cgi")
 	loginParams :=map[string]string{
 		"api":     "SYNO.API.Auth",
@@ -129,35 +157,105 @@ func (ed SynologyMuleDownloader) Download(e2dk string) bool {
 	}
 	parseParams(url,loginParams)
 	resp, err := httpClient.Get(url.String())
+	defer resp.Body.Close()
 	if err != nil || resp.StatusCode!=200 {
 		err = errors.New("Failed to Login to Synology:" + ed.SynologyURL)
-	}else{
+		return "",false
+	}else {
 		response := new(SynologyAuthResponse)
 		json.NewDecoder(resp.Body).Decode(response)
-		if !response.Success{
+		if !response.Success {
+			return "",false
+		}else{
+			return response.Data.Sid,true
+		}
+	}
+}
+
+func (ed SynologyMuleDownloader) DownloadTorrent(fileName string,torrentData []byte) bool {
+	cookieJar, _ := cookiejar.New(nil)
+	httpClient := &http.Client{
+		Jar: cookieJar,
+	}
+	sid,success := ed.Login(httpClient)
+	if success {
+		urlSynology,_ := url.Parse(ed.SynologyURL + "/webapi/DownloadStation/task.cgi")
+		downloadParams :=map[string]string{
+			"api":     "SYNO.DownloadStation.Task",
+			"version": "1",
+			"method":  "create",
+			"_sid":sid,
+			"destination":ed.SynologyDestionation,
+		}
+
+		payload := &bytes.Buffer{}
+		w := multipart.NewWriter(payload)
+		parseFormData(downloadParams,w)
+		if fw, err := w.CreateFormFile("file",fileName + ".torrent"); err != nil {
+			return false
+		}else{
+			int,err := fw.Write(torrentData)
+			if err!=nil {
+				fmt.Println(err)
+			}
+			fmt.Println(int)
+		}
+		w.Close()
+
+
+		req, err := http.NewRequest("POST", urlSynology.String(), payload)
+		req.Header.Set("Content-Type", w.FormDataContentType())
+
+		if err != nil {
 			return false
 		}
+		resp, err := httpClient.Do(req)
+		if  err!= nil || resp.StatusCode !=200{
+			err = errors.New("Failed to Download torrent:" + fileName)
+		}
 		defer resp.Body.Close()
+		return err == nil
+	}else{
+		return false
+	}
+}
+
+func parseFormData(params map[string]string, w *multipart.Writer) {
+	for k, v := range params {
+		_ = w.WriteField(k,v)
+	}
+}
+
+
+
+func (ed SynologyMuleDownloader) DownloadE2DK(e2dk string) bool {
+	cookieJar, _ := cookiejar.New(nil)
+	httpClient := &http.Client{
+		Jar: cookieJar,
+	}
+	sid,success := ed.Login(httpClient)
+	if success {
 		url,_ := url.Parse(ed.SynologyURL + "/webapi/DownloadStation/task.cgi")
 		downloadParams :=map[string]string{
 			"api":     "SYNO.DownloadStation.Task",
 			"version": "1",
 			"method":  "create",
 			"uri": e2dk,
-			"_sid":response.Data.Sid,
+			"_sid":sid,
 			"destionation": ed.SynologyDestionation,
 		}
-
 		parseParams(url,downloadParams)
-		resp, err = httpClient.Get(url.String())
+		resp, err := httpClient.Get(url.String())
 		if  err!= nil || resp.StatusCode !=200{
 			err = errors.New("Failed to Download:" + e2dk)
 		}
+		defer resp.Body.Close()
+		return err == nil
+	}else{
+		return false
 	}
-	defer resp.Body.Close()
-	return err == nil
 }
-func (ed EmuleDownloader) Download(e2dk string) bool {
+func (ed EmuleDownloader) DownloadE2DK(e2dk string) bool {
 	client := &http.Client{}
 	form := url.Values{}
 	form.Add("p", ed.Password)

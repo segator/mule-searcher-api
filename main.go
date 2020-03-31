@@ -89,35 +89,41 @@ func main() {
 		"INFO",
 		"DEBUG",
 */
-	downloaderPattern := regexp.MustCompile(`^(emule|synology|amule):(https?|tcp):\/\/(.+)@(.+):([0-9]+)\/?(.*)?$`)
+	downloaderPattern := regexp.MustCompile(`^(T|E):(emule|synology|amule):(https?|tcp):\/\/(.+)@(.+):([0-9]+)\/?(.*)?$`)
 	multiDownloader := download.MultiDownloader{}
 	for _,downloaderString := range downloaders {
 		if !downloaderPattern.MatchString(downloaderString) {
 			com.HhjLog.Errorf("Invalid downloader format: %s", downloaderString)
 			os.Exit(1)
 		}
-		var downloader download.Downloader
-		switch downloaderPattern.FindStringSubmatch(downloaderString)[1]{
+
+		typeDownloader := downloaderPattern.FindStringSubmatch(downloaderString)[1]
+		switch downloaderPattern.FindStringSubmatch(downloaderString)[2]{
 		case "emule":
-			emuleURL := fmt.Sprintf("%s://%s:%s",downloaderPattern.FindStringSubmatch(downloaderString)[2],downloaderPattern.FindStringSubmatch(downloaderString)[4],downloaderPattern.FindStringSubmatch(downloaderString)[5])
-			downloader = download.EmuleDownloader{Password:downloaderPattern.FindStringSubmatch(downloaderString)[3], EmuleWebURL:emuleURL}
+			emuleURL := fmt.Sprintf("%s://%s:%s",downloaderPattern.FindStringSubmatch(downloaderString)[3],downloaderPattern.FindStringSubmatch(downloaderString)[5],downloaderPattern.FindStringSubmatch(downloaderString)[6])
+			multiDownloader.DownloaderE2dkList = append(multiDownloader.DownloaderE2dkList,download.EmuleDownloader{Password:downloaderPattern.FindStringSubmatch(downloaderString)[3], EmuleWebURL:emuleURL})
 		case "synology":
-			synologyURL := fmt.Sprintf("%s://%s:%s",downloaderPattern.FindStringSubmatch(downloaderString)[2],downloaderPattern.FindStringSubmatch(downloaderString)[4],downloaderPattern.FindStringSubmatch(downloaderString)[5])
-			userPass := strings.Split(downloaderPattern.FindStringSubmatch(downloaderString)[3],":")
-			downloader = download.SynologyMuleDownloader{SynologyPassword:userPass[1],
+			synologyURL := fmt.Sprintf("%s://%s:%s",downloaderPattern.FindStringSubmatch(downloaderString)[3],downloaderPattern.FindStringSubmatch(downloaderString)[5],downloaderPattern.FindStringSubmatch(downloaderString)[6])
+			userPass := strings.Split(downloaderPattern.FindStringSubmatch(downloaderString)[4],":")
+			synologyDownloader := download.SynologyMuleDownloader{SynologyPassword:userPass[1],
 				SynologyUser:userPass[0],
 				SynologyURL:synologyURL,
-				SynologyDestionation: downloaderPattern.FindStringSubmatch(downloaderString)[6],
+				SynologyDestionation: downloaderPattern.FindStringSubmatch(downloaderString)[7],
 			}
+			if typeDownloader == "T" {
+				multiDownloader.DownloaderTorrentList = append(multiDownloader.DownloaderTorrentList,synologyDownloader)
+			}else if typeDownloader == "E" {
+				multiDownloader.DownloaderE2dkList = append(multiDownloader.DownloaderE2dkList,synologyDownloader)
+			}
+
 		case "amule":
-			amulePort, err := strconv.Atoi(downloaderPattern.FindStringSubmatch(downloaderString)[5])
+			amulePort, err := strconv.Atoi(downloaderPattern.FindStringSubmatch(downloaderString)[6])
 			if err != nil {
-				com.HhjLog.Errorf("Invalid Amule Port format: %s", downloaderPattern.FindStringSubmatch(downloaderString)[5])
+				com.HhjLog.Errorf("Invalid Amule Port format: %s", downloaderPattern.FindStringSubmatch(downloaderString)[6])
 				os.Exit(1)
 			}
-			downloader = download.AmuleDownloader{AmuleHost:downloaderPattern.FindStringSubmatch(downloaderString)[4], AmulePort:amulePort,AmulePassword:downloaderPattern.FindStringSubmatch(downloaderString)[3],}
+			multiDownloader.DownloaderE2dkList = append(multiDownloader.DownloaderE2dkList,download.AmuleDownloader{AmuleHost:downloaderPattern.FindStringSubmatch(downloaderString)[5], AmulePort:amulePort,AmulePassword:downloaderPattern.FindStringSubmatch(downloaderString)[4],})
 		}
-		multiDownloader.DownloaderList = append(multiDownloader.DownloaderList,downloader)
 	}
 
 	searcherPattern := regexp.MustCompile(`^(.+):(.+)@(sharerip\.com)$`)
@@ -165,7 +171,7 @@ func main() {
 
 	if strings.ToLower(config.EnableSearcher)=="true" {
 		kadInstance.Start(&config)
-		webInstance.Start(kadInstance.SearchReqCh,&config,multiDownloader,searcher)
+		webInstance.Start(kadInstance.SearchReqCh,&config,multiDownloader,multiDownloader,searcher)
 	}
 
 	if config.PublishSSHPathMovies!="" && config.PublishSSHPathTV!="" {
