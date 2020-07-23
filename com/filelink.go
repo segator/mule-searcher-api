@@ -167,7 +167,7 @@ func getSeasonEpisode(name string) (int, int) {
 			if i != -1 {
 				season = i
 				state = 1
-			} else if s == "s" {
+			} else if strings.ToLower(s) == "s"  {
 				state = 1
 			}
 		case 1: // season
@@ -183,7 +183,7 @@ func getSeasonEpisode(name string) (int, int) {
 					season = -1
 					state = 0
 				} else {
-					if s == "e" || s == "x" {
+					if strings.ToLower(s) == "e" || s == "x" {
 						state = 2
 					} else {
 						state = 3

@@ -8,8 +8,8 @@ import (
 	"golang.org/x/crypto/ssh"
 	"hahajing/com"
 	"io"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -137,23 +137,22 @@ func (p *PublisherSSHConfig) uploadFile(sourceFile FileInfo) error {
 func getUploadableFiles(path string, extensions []string,minimumTime time.Duration) ([]FileInfo,error)  {
 	var files []FileInfo
 	nowTime := time.Now()
-	ReadedFiles,err :=ioutil.ReadDir(path)
-	if err!= nil {
-		return nil,err
-	}
-	for _,info := range ReadedFiles {
+	err := filepath.Walk(path,func(path string, info os.FileInfo, err error) error {
 		toLower := strings.ToLower(info.Name())
 		uploadablePeriodTime := info.ModTime().Add(minimumTime)
 		if !info.IsDir() && uploadablePeriodTime.Before(nowTime) {
-			for _,extension := range extensions {
-				if strings.HasSuffix(toLower,extension) {
+			for _, extension := range extensions {
+				if strings.HasSuffix(toLower, extension) {
 					files = append(files, FileInfo{
-						path: path,
+						path: filepath.Dir(path),
 						info: info,
 					})
 				}
 			}
 		}
-	}
+		return nil
+	})
+
+
 	return files,err
 }
