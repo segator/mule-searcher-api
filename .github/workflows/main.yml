@@ -31,7 +31,7 @@ jobs:
         name: binaries
         path: ./dist
     - name: Publish to Registry
-      uses: elgohr/Publish-Docker-Github-Action@2.12
+      uses: elgohr/Publish-Docker-Github-Action@v5
       with:
         name: segator/kad-e2dk-api
         username: ${{ secrets.DOCKER_USERNAME }}
